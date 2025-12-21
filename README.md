@@ -1,59 +1,140 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Supply Chain Management System (GIS)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based Supply Chain Management System with Geographic Information System (GIS) features for tracking suppliers, factories, distributors, and couriers.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- 🗺️ **Interactive Map Dashboard** - Real-time location tracking on Leaflet maps
+- 👥 **Role-Based Access** - Superadmin, Supplier, Factory, Distributor, Courier
+- 📦 **Order Management** - Full order lifecycle from creation to delivery
+- 🚚 **Courier GPS Tracking** - Real-time courier location updates
+- 💬 **Chat System** - Direct messaging and broadcast messages
+- 🔐 **Google OAuth** - Social login with Google
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Backend**: Laravel 11
+- **Database**: MySQL
+- **Frontend**: Blade Templates, Vanilla CSS
+- **Maps**: Leaflet.js + OpenStreetMap
+- **Authentication**: Laravel Auth + Google OAuth (Socialite)
 
-## Learning Laravel
+## Installation
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Local Development
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+# Clone repository
+git clone https://github.com/nicojoee/SupplyChainTBD.git
+cd SupplyChainTBD
 
-## Laravel Sponsors
+# Install dependencies
+composer install
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Copy environment file
+cp .env.example .env
 
-### Premium Partners
+# Generate app key
+php artisan key:generate
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+# Configure database in .env
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=supply_chain_gis
+# DB_USERNAME=root
+# DB_PASSWORD=
 
-## Contributing
+# Run migrations
+php artisan migrate
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Start server
+php artisan serve
+```
 
-## Code of Conduct
+## Deploy to Vercel
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Prerequisites
+- Vercel account
+- External MySQL database (PlanetScale, Railway, Aiven, etc.)
 
-## Security Vulnerabilities
+### Steps
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+1. **Push to GitHub** (already done)
+
+2. **Import to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Import Project"
+   - Select your GitHub repository
+
+3. **Configure Environment Variables** in Vercel Dashboard:
+   ```
+   APP_NAME=Supply Chain GIS
+   APP_ENV=production
+   APP_KEY=base64:YOUR_APP_KEY_HERE
+   APP_DEBUG=false
+   APP_URL=https://your-domain.vercel.app
+   
+   DB_CONNECTION=mysql
+   DB_HOST=your-db-host.com
+   DB_PORT=3306
+   DB_DATABASE=your_database
+   DB_USERNAME=your_username
+   DB_PASSWORD=your_password
+   
+   SESSION_DRIVER=cookie
+   CACHE_STORE=array
+   LOG_CHANNEL=stderr
+   
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   GOOGLE_REDIRECT_URI=https://your-domain.vercel.app/auth/google/callback
+   
+   SUPERADMIN_EMAIL=your-email@example.com
+   ```
+
+4. **Deploy** - Vercel will automatically build and deploy
+
+### Generate APP_KEY
+
+Run locally and copy the key:
+```bash
+php artisan key:generate --show
+```
+
+## Database Schema
+
+See [database/schema/supply_chain_database.sql](database/schema/supply_chain_database.sql) for complete MySQL schema.
+
+### Main Tables
+- `users` - User accounts with roles
+- `suppliers`, `factories`, `distributors`, `couriers` - Entity profiles
+- `products` - Master product catalog
+- `supplier_products`, `factory_products`, `distributor_stocks` - Inventory
+- `orders`, `order_items` - Order management
+- `conversations`, `messages` - Chat system
+
+## User Roles
+
+| Role | Description |
+|------|-------------|
+| `superadmin` | Full system access, manage all entities |
+| `supplier` | Manage raw materials, fulfill orders to factories |
+| `factory` | Buy from suppliers, produce & sell to distributors |
+| `distributor` | Buy from factories, manage warehouse stock |
+| `courier` | GPS tracking, deliver orders |
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/map-data` | Get all entities for map display |
+| `POST /courier/location` | Update courier GPS position |
+| `GET /api/suppliers` | Paginated suppliers list |
+| `GET /api/factories` | Paginated factories list |
+| `GET /api/distributors` | Paginated distributors list |
+| `GET /api/couriers` | Paginated couriers list |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
