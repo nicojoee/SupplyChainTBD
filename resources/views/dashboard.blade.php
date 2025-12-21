@@ -115,9 +115,20 @@
 <div class="card" id="map-card">
     <div class="card-header">
         <h2 class="card-title">Supply Chain Map</h2>
-        <button onclick="toggleMapFullscreen()" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;" id="fullscreen-btn">
-            ⛶ Fullscreen
-        </button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <!-- Search Box -->
+            <div style="position: relative;">
+                <input type="text" 
+                       id="map-search" 
+                       placeholder="🔍 Search supplier, factory, distributor, courier..." 
+                       style="width: 320px; padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.85rem;"
+                       autocomplete="off">
+                <div id="search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 4px; max-height: 300px; overflow-y: auto; z-index: 1000;"></div>
+            </div>
+            <button onclick="toggleMapFullscreen()" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;" id="fullscreen-btn">
+                ⛶ Fullscreen
+            </button>
+        </div>
     </div>
     <div class="map-container">
         <div id="map"></div>
@@ -193,12 +204,52 @@
             <span id="couriers-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $couriers->firstItem() }}-{{ $couriers->lastItem() }} of {{ $couriers->total() }}</span>
             <div style="display: flex; gap: 0.25rem;">
                 <button onclick="loadPage('couriers', 'prev')" id="couriers-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $couriers->onFirstPage() ? 'disabled' : '' }}>←</button>
-                <button onclick="loadPage('couriers', 'next')" id="couriers-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$couriers->hasMorePages() ? 'disabled' : '' }}>→</button>
-            </div>
-        </div>
         @endif
     </div>
+
 </div>
+
+<!-- Purchase Modal -->
+@if(auth()->user()->role === 'factory' || auth()->user()->role === 'distributor')
+<div id="purchase-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: linear-gradient(145deg, #1e1b4b, #312e81); border-radius: 16px; padding: 24px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 id="modal-title" style="margin: 0; color: #fff; font-size: 1.25rem;">🛒 Purchase Order</h3>
+            <button onclick="closePurchaseModal()" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem;">×</button>
+        </div>
+        
+        <div id="modal-seller-info" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <div id="modal-seller-name" style="font-weight: 600; color: #fff;"></div>
+            <div id="modal-seller-type" style="font-size: 0.8rem; color: rgba(255,255,255,0.5);"></div>
+        </div>
+        
+        <form id="purchase-form">
+            <input type="hidden" id="modal-seller-id" name="seller_id">
+            <input type="hidden" id="modal-seller-entity" name="seller_type">
+            
+            <div id="modal-products" style="margin-bottom: 20px;">
+                <!-- Products will be inserted here -->
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: rgba(255,255,255,0.7);">Total Amount:</span>
+                    <span id="modal-total" style="font-size: 1.5rem; font-weight: 700; color: #22c55e;">$0.00</span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 12px;">
+                <button type="button" onclick="closePurchaseModal()" style="flex: 1; padding: 12px; background: rgba(255,255,255,0.1); color: #fff; border: none; border-radius: 8px; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="submit" id="modal-submit-btn" style="flex: 2; padding: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    📦 Place Order
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
 @endsection
 
 @section('scripts')
@@ -236,13 +287,157 @@
         }
     });
 
-    // Initialize map centered on Indonesia
-    const map = L.map('map').setView([-2.5, 118], 5);
+    // Initialize map centered on Indonesia with aggressive performance optimizations
+    const map = L.map('map', {
+        center: [-2.5, 118],
+        zoom: 5,
+        preferCanvas: true,         // Use canvas for markers (faster than SVG)
+        zoomControl: true,
+        scrollWheelZoom: true,
+        fadeAnimation: false,       // Disable fade animation (reduces CPU)
+        zoomAnimation: true,        // Keep zoom animation for UX
+        markerZoomAnimation: false, // Disable marker zoom animation
+        inertia: true,              // Keep inertia for smooth panning
+        inertiaDeceleration: 2000,  // Faster deceleration
+        worldCopyJump: false,       // Disable world copy
+        maxBoundsViscosity: 0       // No bounds viscosity
+    });
 
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    // Street - OpenStreetMap Standard (clearer fonts and road lines)
+    // Using tile.openstreetmap.org CDN for better performance
+    const streetLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 4
+    });
+
+    // Satellite - ESRI World Imagery + Roads with Labels
+    const satelliteImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Imagery &copy; Esri',
+        maxZoom: 19,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 4
+    });
+
+    // Roads + Labels overlay (ESRI Transportation - includes road names)
+    const roadsWithLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Roads &copy; Esri',
+        maxZoom: 19,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 2,
+        pane: 'overlayPane'
+    });
+
+    const satelliteLayer = L.layerGroup([satelliteImagery, roadsWithLabels]);
+
+    // Add default layer
+    streetLayer.addTo(map);
+
+    // Overlay - Administrative boundaries (sharp labels)
+    const adminBoundaries = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        detectRetina: true
+    });
+
+    // Layer control - Simple and clean
+    const baseLayers = {
+        '🗺️ Street': streetLayer,
+        '🛰️ Satellite': satelliteLayer
+    };
+
+    const overlayLayers = {
+        '📍 Batas Wilayah': adminBoundaries
+    };
+
+    L.control.layers(baseLayers, overlayLayers, { position: 'topright' }).addTo(map);
+
+    // Search functionality with autocomplete
+    const searchInput = document.getElementById('map-search');
+    const searchResults = document.getElementById('search-results');
+    let searchTimeout = null;
+    let allMarkers = {}; // Store markers by type-id
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        // Clear previous timeout
+        if (searchTimeout) clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+            fetch(`{{ route('api.search') }}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(results => {
+                    if (results.length === 0) {
+                        searchResults.innerHTML = '<div style="padding: 12px; color: rgba(255,255,255,0.5);">No results found</div>';
+                    } else {
+                        searchResults.innerHTML = results.map(item => `
+                            <div class="search-result-item" 
+                                 onclick="locateEntity(${item.latitude}, ${item.longitude}, '${item.type}', ${item.id}, '${item.name.replace(/'/g, "\\'")}')"
+                                 style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+                                 onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                                 onmouseout="this.style.background='transparent'">
+                                <span style="font-size: 1.2rem;">${item.icon}</span>
+                                <div>
+                                    <div style="font-weight: 500; color: #fff;">${item.name}</div>
+                                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">${item.type.charAt(0).toUpperCase() + item.type.slice(1)} • ${item.address || 'No address'}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    searchResults.style.display = 'block';
+                })
+                .catch(err => {
+                    console.error('Search error:', err);
+                    searchResults.style.display = 'none';
+                });
+        }, 300);
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Locate entity on map
+    window.locateEntity = function(lat, lng, type, id, name) {
+        searchResults.style.display = 'none';
+        searchInput.value = name;
+        
+        // Zoom to location
+        map.setView([lat, lng], 16);
+        
+        // Find and open the marker popup
+        const markerKey = `${type}-${id}`;
+        if (allMarkers[markerKey]) {
+            setTimeout(() => allMarkers[markerKey].openPopup(), 300);
+        }
+    };
+
+    // Haversine distance calculation (returns km)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return (R * c).toFixed(1);
+    }
 
     // Self entity data from server
     const selfEntity = @json($selfEntity);
@@ -276,6 +471,12 @@
         courierBusy: L.divIcon({
             className: 'custom-marker',
             html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🛵</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        }),
+        courierNoGps: L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background: #6b7280; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px dashed #9ca3af; box-shadow: 0 2px 10px rgba(0,0,0,0.3); opacity: 0.7;">🛵</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         }),
@@ -334,7 +535,12 @@
                     const selfIconKey = 'self' + props.type.charAt(0).toUpperCase() + props.type.slice(1);
                     icon = icons[selfIconKey] || icon;
                 } else if (props.type === 'courier') {
-                    icon = (props.status === 'idle') ? icons.courierIdle : icons.courierBusy;
+                    // Check GPS status - use semi-transparent icon if no GPS
+                    if (!props.is_gps_active) {
+                        icon = icons.courierNoGps;
+                    } else {
+                        icon = (props.status === 'idle') ? icons.courierIdle : icons.courierBusy;
+                    }
                 }
 
                 let popupContent = `
@@ -359,26 +565,197 @@
                 if (props.status) {
                     popupContent += `<div class="popup-info">Status: ${props.status}</div>`;
                 }
+                // Show GPS status for couriers
+                if (props.type === 'courier') {
+                    const gpsStatus = props.is_gps_active 
+                        ? '<span style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">📍 GPS Aktif</span>'
+                        : '<span style="background: #6b7280; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">⏸️ GPS Tidak Aktif</span>';
+                    popupContent += `<div style="margin: 8px 0;">${gpsStatus}</div>`;
+                    if (props.vehicle) {
+                        popupContent += `<div class="popup-info">🛵 ${props.vehicle}</div>`;
+                    }
+                    if (props.license_plate) {
+                        popupContent += `<div class="popup-info">🔢 ${props.license_plate}</div>`;
+                    }
+                    if (props.last_seen) {
+                        popupContent += `<div class="popup-info" style="color: #888;">🕐 ${props.last_seen}</div>`;
+                    }
+                }
 
-                // Products/Stocks
-                if (props.products && props.products.length > 0) {
-                    popupContent += '<div class="popup-products"><strong>Products:</strong>';
-                    props.products.forEach(p => {
-                        popupContent += `<div class="popup-product">• ${p.name} - $${p.price}</div>`;
-                    });
-                    popupContent += '</div>';
+
+                // Products/Stocks - Role-based display
+                @php
+                    $userRole = auth()->user()->role;
+                @endphp
+
+                // Supplier products - show badge if has stock
+                if (props.type === 'supplier' && props.products && props.products.length > 0) {
+                    const hasStock = props.products.some(p => p.stock > 0);
+                    if (hasStock) {
+                        popupContent += `<div style="margin: 8px 0;"><span style="background: linear-gradient(135deg, #22c55e, #16a34a); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">🏷️ SELLING</span></div>`;
+                    }
+                    
+                    // isSelf = user viewing their own marker, OR Factory can see full details
+                    @if($userRole === 'factory' || $userRole === 'supplier')
+                    if (isSelf || '{{ $userRole }}' === 'factory') {
+                        // Show full product details with price and stock
+                        popupContent += '<div class="popup-products"><strong>📦 ' + (isSelf ? 'My Products:' : 'Raw Materials Available:') + '</strong>';
+                        props.products.forEach(p => {
+                            const stockBadge = p.stock > 0 ? `<span style="color: #22c55e;">(${p.stock} in stock)</span>` : `<span style="color: #ef4444;">(Out of stock)</span>`;
+                            popupContent += `<div class="popup-product">• ${p.name} - <strong>$${p.price}</strong> ${stockBadge}</div>`;
+                        });
+                        popupContent += '</div>';
+                    } else {
+                        // Other suppliers viewing different supplier - limited info
+                        popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>📦 ${props.products.length} products available</em></div>`;
+                    }
+                    @else
+                    // Superadmin, Distributor & Courier can only see company info, no product details
+                    popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>📦 ${props.products.length} products available</em></div>`;
+                    @endif
                 }
+
+                // Factory products - show to distributors with price info
+                if (props.type === 'factory' && props.products && props.products.length > 0) {
+                    const hasStock = props.products.some(p => p.quantity > 0);
+                    if (hasStock) {
+                        popupContent += `<div style="margin: 8px 0;"><span style="background: linear-gradient(135deg, #f59e0b, #d97706); padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">🏭 PRODUCING</span></div>`;
+                    }
+                    
+                    // isSelf = user viewing their own marker, OR Distributor can see full details
+                    @if($userRole === 'distributor' || $userRole === 'factory')
+                    if (isSelf || '{{ $userRole }}' === 'distributor') {
+                        // Show full product details with price and quantity
+                        popupContent += '<div class="popup-products"><strong>🏭 ' + (isSelf ? 'My Products:' : 'Products Available:') + '</strong>';
+                        props.products.forEach(p => {
+                            const qtyBadge = p.quantity > 0 ? `<span style="color: #22c55e;">(${p.quantity} available)</span>` : `<span style="color: #ef4444;">(None available)</span>`;
+                            popupContent += `<div class="popup-product">• ${p.name} - <strong>$${p.price}</strong> ${qtyBadge}</div>`;
+                        });
+                        popupContent += '</div>';
+                    } else {
+                        // Other factories viewing different factory - limited info
+                        popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>🏭 ${props.products.length} products manufactured</em></div>`;
+                    }
+                    @else
+                    // Superadmin, Supplier & Courier can only see company info
+                    popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>🏭 ${props.products.length} products manufactured</em></div>`;
+                    @endif
+                }
+
+                // Distributor stocks - show full info only if isSelf
                 if (props.stocks && props.stocks.length > 0) {
-                    popupContent += '<div class="popup-products"><strong>Stock:</strong>';
-                    props.stocks.forEach(s => {
-                        popupContent += `<div class="popup-product">• ${s.name}: ${s.quantity} pcs</div>`;
-                    });
-                    popupContent += '</div>';
+                    @if($userRole === 'distributor')
+                    if (isSelf) {
+                        popupContent += '<div class="popup-products"><strong>📊 ' + (isSelf ? 'My Stock:' : 'Stock:') + '</strong>';
+                        props.stocks.forEach(s => {
+                            popupContent += `<div class="popup-product">• ${s.name}: ${s.quantity} pcs</div>`;
+                        });
+                        popupContent += '</div>';
+                    } else {
+                        popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>📊 ${props.stocks.length} products in stock</em></div>`;
+                    }
+                    @else
+                    // Other roles see limited info
+                    popupContent += `<div class="popup-info" style="margin-top: 8px; color: rgba(255,255,255,0.5); font-size: 0.8rem;"><em>📊 ${props.stocks.length} products in stock (contact for details)</em></div>`;
+                    @endif
                 }
+
+                // Superadmin controls - Edit Position & Delete
+                @if(auth()->user()->role === 'superadmin')
+                if (props.type !== 'courier') {
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 8px;">📍 Lat: ${coords[1].toFixed(6)}, Lng: ${coords[0].toFixed(6)}</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="editPosition('${props.type}', ${props.id}, ${coords[1]}, ${coords[0]})" 
+                                    style="flex: 1; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                                    ✏️ Edit Position
+                                </button>
+                                <button onclick="deleteEntity('${props.type}', ${props.id}, '${props.name}')" 
+                                    style="flex: 1; padding: 8px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                @endif
+
+                // Role-based action buttons
+                @if($userRole === 'supplier')
+                // Supplier viewing own marker - Manage Products
+                if (isSelf && props.type === 'supplier') {
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <a href="{{ route('supplier.index') }}" 
+                               style="display: block; text-align: center; padding: 10px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                🏷️ Manage My Products
+                            </a>
+                        </div>
+                    `;
+                }
+                @endif
+
+                @if($userRole === 'factory')
+                // Factory viewing own marker - Manage Products
+                if (isSelf && props.type === 'factory') {
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <a href="{{ route('factory.index') }}" 
+                               style="display: block; text-align: center; padding: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                🏭 Manage My Products
+                            </a>
+                        </div>
+                    `;
+                }
+                // Factory viewing Supplier marker - Buy Materials
+                if (!isSelf && props.type === 'supplier' && props.products && props.products.length > 0) {
+                    const distance = selfEntity ? calculateDistance(selfEntity.latitude, selfEntity.longitude, coords[1], coords[0]) : '?';
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 8px;">📏 Distance: ${distance} km from your factory</div>
+                            <button onclick="openPurchaseModal('supplier', ${props.id}, '${props.name.replace(/'/g, "\\'")}', ${JSON.stringify(props.products).replace(/"/g, '&quot;')})" 
+                                style="width: 100%; padding: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                🛒 Buy Raw Materials
+                            </button>
+                        </div>
+                    `;
+                }
+                @endif
+
+                @if($userRole === 'distributor')
+                // Distributor viewing own marker
+                if (isSelf && props.type === 'distributor') {
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <a href="{{ route('distributor.index') }}" 
+                               style="display: block; text-align: center; padding: 10px; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                📊 Manage My Stock
+                            </a>
+                        </div>
+                    `;
+                }
+                // Distributor viewing Factory marker - Buy Products
+                if (!isSelf && props.type === 'factory' && props.products && props.products.length > 0) {
+                    const distance = selfEntity ? calculateDistance(selfEntity.latitude, selfEntity.longitude, coords[1], coords[0]) : '?';
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 8px;">📏 Distance: ${distance} km from your warehouse</div>
+                            <button onclick="openPurchaseModal('factory', ${props.id}, '${props.name.replace(/'/g, "\\'")}', ${JSON.stringify(props.products).replace(/"/g, '&quot;')})" 
+                                style="width: 100%; padding: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                🛒 Buy Products
+                            </button>
+                        </div>
+                    `;
+                }
+                @endif
 
                 const marker = L.marker([coords[1], coords[0]], { icon })
                     .addTo(map)
-                    .bindPopup(popupContent);
+                    .bindPopup(popupContent, { maxWidth: 300 });
+                
+                // Store marker for search auto-locate
+                allMarkers[`${props.type}-${props.id}`] = marker;
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
@@ -422,9 +799,9 @@
 
         // Create popup content with entity options (only fixed location entities)
         const popupContent = `
-            <div style="text-align: center; min-width: 200px;">
-                <div style="font-weight: 600; margin-bottom: 10px; color: #333;">📍 Add New Entity</div>
-                <div style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">
+            <div style="text-align: center; min-width: 200px; background: rgba(30, 27, 75, 0.95); padding: 15px; border-radius: 12px; margin: -13px -20px;">
+                <div style="font-weight: 600; margin-bottom: 10px; color: #fff;">📍 Add New Entity</div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 15px;">
                     Lat: ${lat}<br>Lng: ${lng}
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -517,17 +894,36 @@
                         const coords = feature.geometry.coordinates;
                         const props = feature.properties;
                         const courierId = props.id;
+                        // Check GPS status
+                        const hasGps = props.is_gps_active;
 
-                        // Create icon based on status
-                        const icon = (props.status === 'idle') ? icons.courierIdle : icons.courierBusy;
+                        // Create icon based on status and GPS
+                        let icon;
+                        if (!hasGps) {
+                            icon = icons.courierNoGps;
+                        } else {
+                            icon = (props.status === 'idle') ? icons.courierIdle : icons.courierBusy;
+                        }
+
+                        // GPS status badge
+                        const gpsStatus = hasGps 
+                            ? '<span style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">📍 GPS Aktif</span>'
+                            : '<span style="background: #6b7280; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">⏸️ GPS Tidak Aktif</span>';
+
+                        // Last seen info
+                        const lastSeenInfo = props.last_seen 
+                            ? `<div class="popup-info" style="color: #888;">🕐 ${props.last_seen}</div>` 
+                            : '';
 
                         // Build popup
                         let popupContent = `
                             <div class="popup-title">${props.name}</div>
                             <span class="popup-type courier">courier</span>
+                            <div style="margin: 8px 0;">${gpsStatus}</div>
                             <div class="popup-info">🛵 ${props.vehicle || 'Vehicle N/A'}</div>
                             <div class="popup-info">📞 ${props.phone || 'N/A'}</div>
                             <div class="popup-info">Status: <strong>${props.status}</strong></div>
+                            ${lastSeenInfo}
                         `;
 
                         if (courierMarkers[courierId]) {
@@ -546,8 +942,221 @@
             .catch(err => console.error('Error refreshing couriers:', err));
     }
 
-    // Refresh courier positions every 5 seconds
-    setInterval(refreshCourierPositions, 5000);
+    // Refresh courier positions every 3 seconds (optimized - only update markers, not reload entire map)
+    setInterval(refreshCourierPositions, 3000);
+
+    // Purchase Modal Functions
+    @if(auth()->user()->role === 'factory' || auth()->user()->role === 'distributor')
+    let currentProducts = [];
+    
+    window.openPurchaseModal = function(sellerType, sellerId, sellerName, products) {
+        // Decode products if it's a string
+        if (typeof products === 'string') {
+            products = JSON.parse(products.replace(/&quot;/g, '"'));
+        }
+        currentProducts = products;
+        
+        document.getElementById('modal-seller-id').value = sellerId;
+        document.getElementById('modal-seller-entity').value = sellerType;
+        document.getElementById('modal-seller-name').textContent = sellerName;
+        document.getElementById('modal-seller-type').textContent = sellerType === 'supplier' ? '📦 Supplier' : '🏭 Factory';
+        document.getElementById('modal-title').textContent = sellerType === 'supplier' ? '🛒 Buy Raw Materials' : '🛒 Buy Products';
+        
+        // Build products list
+        let productsHtml = '';
+        products.forEach((p, index) => {
+            const available = p.stock || p.quantity || 0;
+            const price = parseFloat(p.price) || 0;
+            productsHtml += `
+                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 500; color: #fff;">${p.name}</div>
+                        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5);">$${price.toFixed(2)} per unit • ${available} available</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" 
+                               name="qty_${index}" 
+                               data-price="${price}" 
+                               data-product-id="${p.id || index}"
+                               data-product-name="${p.name}"
+                               value="0" 
+                               min="0" 
+                               max="${available}"
+                               onchange="updateModalTotal()"
+                               oninput="updateModalTotal()"
+                               style="width: 70px; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: #fff; text-align: center;">
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('modal-products').innerHTML = productsHtml;
+        document.getElementById('modal-total').textContent = '$0.00';
+        
+        // Show modal
+        document.getElementById('purchase-modal').style.display = 'flex';
+    };
+    
+    window.closePurchaseModal = function() {
+        document.getElementById('purchase-modal').style.display = 'none';
+    };
+    
+    window.updateModalTotal = function() {
+        const inputs = document.querySelectorAll('#modal-products input[type="number"]');
+        let total = 0;
+        inputs.forEach(input => {
+            const qty = parseInt(input.value) || 0;
+            const price = parseFloat(input.dataset.price) || 0;
+            total += qty * price;
+        });
+        document.getElementById('modal-total').textContent = '$' + total.toFixed(2);
+    };
+    
+    // Form submit handler
+    document.getElementById('purchase-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const sellerId = document.getElementById('modal-seller-id').value;
+        const sellerType = document.getElementById('modal-seller-entity').value;
+        const inputs = document.querySelectorAll('#modal-products input[type="number"]');
+        
+        // Collect items with qty > 0
+        const items = [];
+        inputs.forEach((input, index) => {
+            const qty = parseInt(input.value) || 0;
+            if (qty > 0) {
+                items.push({
+                    product_name: input.dataset.productName,
+                    product_id: input.dataset.productId,
+                    quantity: qty,
+                    price: parseFloat(input.dataset.price)
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            alert('Please select at least one product');
+            return;
+        }
+        
+        // Determine endpoint based on user role
+        const endpoint = sellerType === 'supplier' 
+            ? '{{ route("factory.buy-from-supplier") }}'
+            : '{{ route("distributor.buy-from-factory") }}';
+        
+        // Submit order via AJAX
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                seller_id: sellerId,
+                items: items
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Order placed successfully! Order #' + data.order_id + '\n\nWaiting for seller confirmation.');
+                closePurchaseModal();
+                // Reload page to refresh data
+                window.location.reload();
+            } else {
+                alert('❌ Error: ' + (data.message || 'Failed to place order'));
+            }
+        })
+        .catch(err => {
+            console.error('Order error:', err);
+            alert('❌ Failed to place order. Please try again.');
+        });
+    });
+    @endif
+
+    // Superadmin functions for Edit Position and Delete
+    @if(auth()->user()->role === 'superadmin')
+    // Helper to get correct plural form for routes
+    function getEntityPlural(type) {
+        const plurals = {
+            'supplier': 'suppliers',
+            'factory': 'factories',
+            'distributor': 'distributors'
+        };
+        return plurals[type] || type + 's';
+    }
+
+    function editPosition(type, id, currentLat, currentLng) {
+        const newLat = prompt('Enter new Latitude:', currentLat);
+        if (newLat === null) return;
+        
+        const newLng = prompt('Enter new Longitude:', currentLng);
+        if (newLng === null) return;
+
+        // Validate coordinates
+        if (isNaN(newLat) || isNaN(newLng)) {
+            alert('Invalid coordinates. Please enter valid numbers.');
+            return;
+        }
+
+        const plural = getEntityPlural(type);
+
+        // Send update request
+        fetch(`/superadmin/${plural}/${id}/position`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                latitude: parseFloat(newLat),
+                longitude: parseFloat(newLng)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Position updated successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to update position'));
+            }
+        })
+        .catch(err => {
+            console.error('Error updating position:', err);
+            alert('Error updating position');
+        });
+    }
+
+    function deleteEntity(type, id, name) {
+        if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
+            return;
+        }
+
+        const plural = getEntityPlural(type);
+
+        // Send delete request
+        fetch(`/superadmin/${plural}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to delete'));
+            }
+        })
+        .catch(err => {
+            console.error('Error deleting:', err);
+            alert('Error deleting entity');
+        });
+    }
+    @endif
 </script>
 @endsection
 

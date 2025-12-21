@@ -321,6 +321,30 @@
             color: rgba(255, 255, 255, 0.4);
         }
 
+        /* Select dropdown styling */
+        select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+            cursor: pointer;
+        }
+
+        select.form-control option {
+            background: #1e1b4b;
+            color: #fff;
+            padding: 0.5rem;
+        }
+
+        select.form-control option:hover,
+        select.form-control option:checked {
+            background: #4f46e5;
+            color: #fff;
+        }
+
         /* Buttons */
         .btn {
             display: inline-flex;
@@ -526,12 +550,278 @@
             font-size: 0.8rem;
             padding: 0.2rem 0;
         }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 200;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+
+            .header {
+                padding: 1rem;
+                padding-left: 4rem;
+            }
+
+            .page-title {
+                font-size: 1.25rem;
+            }
+
+            .content {
+                padding: 1rem;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 0.75rem;
+                align-items: flex-start;
+                padding-left: 4rem;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            .card-title {
+                font-size: 1rem;
+            }
+
+            table {
+                font-size: 0.8rem;
+            }
+
+            table th, table td {
+                padding: 0.5rem 0.4rem;
+            }
+
+            .btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+
+            .form-control {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+
+            /* Chat responsive */
+            .chat-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 120px);
+            }
+
+            .chat-sidebar {
+                width: 100%;
+                max-height: 250px;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .chat-panel {
+                min-height: 400px;
+                border-radius: 0 0 16px 16px;
+            }
+
+            /* Stats responsive */
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            /* Map responsive */
+            #map {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 0.75rem;
+                padding-left: 3.5rem;
+            }
+
+            .page-title {
+                font-size: 1rem;
+            }
+
+            .content {
+                padding: 0.75rem;
+            }
+
+            .card {
+                padding: 0.75rem;
+                border-radius: 12px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.75rem;
+            }
+
+            .form-group {
+                margin-bottom: 0.75rem;
+            }
+
+            .form-label {
+                font-size: 0.8rem;
+            }
+
+            /* Sidebar compact */
+            .sidebar {
+                width: 260px;
+                padding: 1rem;
+            }
+
+            .logo {
+                margin-bottom: 1rem;
+            }
+
+            .logo-text {
+                font-size: 1rem;
+            }
+
+            .nav-link {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+
+            .user-section {
+                padding: 0.75rem;
+            }
+
+            /* Chat mobile improvements */
+            .chat-sidebar {
+                max-height: 200px;
+            }
+
+            .conversation-item {
+                padding: 0.5rem;
+            }
+
+            .message-bubble {
+                max-width: 85% !important;
+            }
+        }
+
+        /* Utility classes for responsive */
+        .hide-mobile {
+            display: block;
+        }
+
+        .show-mobile {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .hide-mobile {
+                display: none !important;
+            }
+
+            .show-mobile {
+                display: block !important;
+            }
+        }
+
+        /* Responsive tables */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Touch-friendly buttons */
+        @media (max-width: 768px) {
+            .btn, button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            input[type="text"],
+            input[type="number"],
+            input[type="email"],
+            input[type="password"],
+            select,
+            textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
     </style>
     @yield('styles')
 </head>
 <body>
-    <div class="app-container">
+<div class="app-container">
         @auth
+        <!-- Mobile Menu Toggle -->
+        <button class="mobile-menu-toggle" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+            ☰
+        </button>
+        <div class="sidebar-overlay" onclick="closeMobileMenu()"></div>
+        
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">🌐</div>
@@ -544,6 +834,10 @@
                     <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                         <span class="nav-icon">📊</span>
                         Dashboard
+                    </a>
+                    <a href="{{ route('chat.index') }}" class="nav-link {{ request()->routeIs('chat.*') ? 'active' : '' }}">
+                        <span class="nav-icon">💬</span>
+                        Chat
                     </a>
                 </div>
 
@@ -576,9 +870,13 @@
                 @if(auth()->user()->role === 'supplier')
                 <div class="nav-section">
                     <div class="nav-section-title">Supplier</div>
-                    <a href="{{ route('supplier.index') }}" class="nav-link {{ request()->routeIs('supplier.*') ? 'active' : '' }}">
+                    <a href="{{ route('supplier.index') }}" class="nav-link {{ request()->routeIs('supplier.index') ? 'active' : '' }}">
                         <span class="nav-icon">📦</span>
                         My Products
+                    </a>
+                    <a href="{{ route('supplier.orders') }}" class="nav-link {{ request()->routeIs('supplier.orders') ? 'active' : '' }}">
+                        <span class="nav-icon">📋</span>
+                        Incoming Orders
                     </a>
                 </div>
                 @endif
@@ -586,9 +884,21 @@
                 @if(auth()->user()->role === 'factory')
                 <div class="nav-section">
                     <div class="nav-section-title">Factory</div>
-                    <a href="{{ route('factory.index') }}" class="nav-link {{ request()->routeIs('factory.*') ? 'active' : '' }}">
+                    <a href="{{ route('factory.index') }}" class="nav-link {{ request()->routeIs('factory.index') ? 'active' : '' }}">
                         <span class="nav-icon">🏭</span>
-                        My Factory
+                        My Products
+                    </a>
+                    <a href="{{ route('factory.orders') }}" class="nav-link {{ request()->routeIs('factory.orders') ? 'active' : '' }}">
+                        <span class="nav-icon">📋</span>
+                        Incoming Orders
+                    </a>
+                    <a href="{{ route('factory.my-orders') }}" class="nav-link {{ request()->routeIs('factory.my-orders') ? 'active' : '' }}">
+                        <span class="nav-icon">🛒</span>
+                        My Orders
+                    </a>
+                    <a href="{{ route('factory.marketplace') }}" class="nav-link {{ request()->routeIs('factory.marketplace') ? 'active' : '' }}">
+                        <span class="nav-icon">🏪</span>
+                        Marketplace
                     </a>
                 </div>
                 @endif
@@ -596,9 +906,17 @@
                 @if(auth()->user()->role === 'distributor')
                 <div class="nav-section">
                     <div class="nav-section-title">Distributor</div>
-                    <a href="{{ route('distributor.index') }}" class="nav-link {{ request()->routeIs('distributor.*') ? 'active' : '' }}">
-                        <span class="nav-icon">🚚</span>
-                        My Warehouse
+                    <a href="{{ route('distributor.index') }}" class="nav-link {{ request()->routeIs('distributor.index') ? 'active' : '' }}">
+                        <span class="nav-icon">📦</span>
+                        My Stock
+                    </a>
+                    <a href="{{ route('distributor.orders') }}" class="nav-link {{ request()->routeIs('distributor.orders') ? 'active' : '' }}">
+                        <span class="nav-icon">🛒</span>
+                        My Orders
+                    </a>
+                    <a href="{{ route('distributor.marketplace') }}" class="nav-link {{ request()->routeIs('distributor.marketplace') ? 'active' : '' }}">
+                        <span class="nav-icon">🏪</span>
+                        Marketplace
                     </a>
                 </div>
                 @endif
@@ -653,6 +971,159 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    @auth
+    <!-- Session Timeout: Auto-logout after 2 hours of inactivity -->
+    <script>
+        (function() {
+            // Session timeout configuration (in milliseconds)
+            const SESSION_TIMEOUT = {{ config('session.lifetime', 120) }} * 60 * 1000; // Convert minutes to ms
+            const WARNING_BEFORE = 5 * 60 * 1000; // Show warning 5 minutes before logout
+            
+            let lastActivity = Date.now();
+            let warningShown = false;
+            let warningTimeout = null;
+            let logoutTimeout = null;
+
+            // Track user activity
+            const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+            
+            function resetTimer() {
+                lastActivity = Date.now();
+                warningShown = false;
+                
+                // Clear existing timeouts
+                if (warningTimeout) clearTimeout(warningTimeout);
+                if (logoutTimeout) clearTimeout(logoutTimeout);
+                
+                // Hide warning if shown
+                const warningBanner = document.getElementById('session-warning');
+                if (warningBanner) {
+                    warningBanner.style.display = 'none';
+                }
+                
+                // Set new timeouts
+                warningTimeout = setTimeout(showWarning, SESSION_TIMEOUT - WARNING_BEFORE);
+                logoutTimeout = setTimeout(performLogout, SESSION_TIMEOUT);
+            }
+
+            function showWarning() {
+                if (warningShown) return;
+                warningShown = true;
+                
+                // Create warning banner if not exists
+                let warningBanner = document.getElementById('session-warning');
+                if (!warningBanner) {
+                    warningBanner = document.createElement('div');
+                    warningBanner.id = 'session-warning';
+                    warningBanner.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
+                        color: white;
+                        padding: 12px 20px;
+                        text-align: center;
+                        z-index: 10000;
+                        font-weight: 500;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                    `;
+                    warningBanner.innerHTML = `
+                        ⚠️ Anda akan logout otomatis dalam 5 menit karena tidak ada aktivitas. 
+                        <button onclick="window.sessionKeepAlive()" style="
+                            margin-left: 15px;
+                            padding: 6px 16px;
+                            background: white;
+                            color: #d97706;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-weight: 600;
+                        ">Tetap Login</button>
+                    `;
+                    document.body.insertBefore(warningBanner, document.body.firstChild);
+                }
+                warningBanner.style.display = 'block';
+            }
+
+            function performLogout() {
+                // Show logout message
+                alert('Sesi Anda telah berakhir karena tidak ada aktivitas selama 2 jam. Anda akan diarahkan ke halaman login.');
+                
+                // Perform logout via POST
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ route("logout") }}';
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            // Keep alive function (called when user clicks "Tetap Login")
+            window.sessionKeepAlive = function() {
+                // Make a request to refresh session
+                fetch('{{ route("dashboard") }}', {
+                    method: 'GET',
+                    credentials: 'same-origin'
+                }).then(() => {
+                    resetTimer();
+                }).catch(() => {
+                    resetTimer();
+                });
+            };
+
+            // Add event listeners for activity tracking
+            activityEvents.forEach(event => {
+                document.addEventListener(event, resetTimer, { passive: true });
+            });
+
+            // Initialize timer
+            resetTimer();
+            
+            console.log('Session timeout active: ' + (SESSION_TIMEOUT / 60000) + ' minutes');
+        })();
+    </script>
+    @endauth
+
+    <!-- Mobile Menu Script -->
+    <script>
+        function toggleMobileMenu() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function closeMobileMenu() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        // Close menu when clicking a nav link on mobile
+        document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 1024) {
+                    closeMobileMenu();
+                }
+            });
+        });
+
+        // Close menu on window resize to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 1024) {
+                closeMobileMenu();
+            }
+        });
+    </script>
     
     @yield('scripts')
 </body>

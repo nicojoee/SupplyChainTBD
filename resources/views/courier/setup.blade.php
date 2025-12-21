@@ -16,14 +16,18 @@
             <input type="text" name="name" class="form-control" required placeholder="Enter your name">
         </div>
         <div class="form-group">
-            <label class="form-label">Vehicle Type</label>
-            <select name="vehicle_type" class="form-control">
-                <option value="">Select vehicle type...</option>
-                <option value="Motorcycle">🏍️ Motorcycle</option>
-                <option value="Car">🚗 Car</option>
-                <option value="Van">🚐 Van</option>
-                <option value="Truck">🚚 Truck</option>
+            <label class="form-label">Truck Type (by Capacity)</label>
+            <select name="vehicle_type" class="form-control" required>
+                <option value="">Select truck type...</option>
+                <option value="Pickup Truck (1-2 Ton)">🛻 Pickup Truck (1-2 Ton)</option>
+                <option value="Light Truck (3-5 Ton)">🚚 Light Truck (3-5 Ton)</option>
+                <option value="Medium Truck (6-10 Ton)">🚛 Medium Truck (6-10 Ton)</option>
+                <option value="Heavy Truck (11-20 Ton)">🚛 Heavy Truck (11-20 Ton)</option>
+                <option value="Trailer Truck (>20 Ton)">🚚 Trailer Truck (>20 Ton)</option>
             </select>
+            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem;">
+                Larger deliveries may require multiple trips or couriers
+            </div>
         </div>
         <div class="form-group">
             <label class="form-label">License Plate</label>

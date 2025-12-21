@@ -59,15 +59,29 @@ class SuperAdminController extends Controller
     {
         $request->validate([
             'email' => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'phone' => 'nullable|string|max:20',
         ]);
 
-        User::create([
-            'name' => explode('@', $request->email)[0],
+        $user = User::create([
+            'name' => $request->name,
             'email' => $request->email,
             'role' => 'supplier',
         ]);
 
-        return redirect()->route('superadmin.suppliers')->with('success', 'Supplier account created! They can now login with Google.');
+        Supplier::create([
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'phone' => $request->phone,
+        ]);
+
+        return redirect()->route('superadmin.suppliers')->with('success', 'Supplier created with location! They can login with Google.');
     }
 
     // Add Factory Form
@@ -80,15 +94,31 @@ class SuperAdminController extends Controller
     {
         $request->validate([
             'email' => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'phone' => 'nullable|string|max:20',
+            'production_capacity' => 'required|integer|min:0',
         ]);
 
-        User::create([
-            'name' => explode('@', $request->email)[0],
+        $user = User::create([
+            'name' => $request->name,
             'email' => $request->email,
             'role' => 'factory',
         ]);
 
-        return redirect()->route('superadmin.factories')->with('success', 'Factory account created! They can now login with Google.');
+        Factory::create([
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'phone' => $request->phone,
+            'production_capacity' => $request->production_capacity,
+        ]);
+
+        return redirect()->route('superadmin.factories')->with('success', 'Factory created with location! They can login with Google.');
     }
 
     // Add Distributor Form
@@ -101,15 +131,31 @@ class SuperAdminController extends Controller
     {
         $request->validate([
             'email' => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'address' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'phone' => 'nullable|string|max:20',
+            'warehouse_capacity' => 'required|integer|min:0',
         ]);
 
-        User::create([
-            'name' => explode('@', $request->email)[0],
+        $user = User::create([
+            'name' => $request->name,
             'email' => $request->email,
             'role' => 'distributor',
         ]);
 
-        return redirect()->route('superadmin.distributors')->with('success', 'Distributor account created! They can now login with Google.');
+        Distributor::create([
+            'user_id' => $user->id,
+            'name' => $request->name,
+            'address' => $request->address,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'phone' => $request->phone,
+            'warehouse_capacity' => $request->warehouse_capacity,
+        ]);
+
+        return redirect()->route('superadmin.distributors')->with('success', 'Distributor created with location! They can login with Google.');
     }
 
     // Courier Management
@@ -205,5 +251,88 @@ class SuperAdminController extends Controller
         }
 
         return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
+    }
+
+    // AJAX Position Update Methods
+    public function updateSupplierPosition(Request $request, Supplier $supplier)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $supplier->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Supplier position updated']);
+    }
+
+    public function updateFactoryPosition(Request $request, Factory $factory)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $factory->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Factory position updated']);
+    }
+
+    public function updateDistributorPosition(Request $request, Distributor $distributor)
+    {
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $distributor->update([
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Distributor position updated']);
+    }
+
+    // AJAX Delete Methods
+    public function deleteSupplierAjax(Supplier $supplier)
+    {
+        $user = $supplier->user;
+        $supplier->products()->delete();
+        $supplier->delete();
+        if ($user) {
+            $user->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Supplier deleted']);
+    }
+
+    public function deleteFactoryAjax(Factory $factory)
+    {
+        $user = $factory->user;
+        $factory->products()->delete();
+        $factory->delete();
+        if ($user) {
+            $user->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Factory deleted']);
+    }
+
+    public function deleteDistributorAjax(Distributor $distributor)
+    {
+        $user = $distributor->user;
+        $distributor->stocks()->delete();
+        $distributor->delete();
+        if ($user) {
+            $user->delete();
+        }
+
+        return response()->json(['success' => true, 'message' => 'Distributor deleted']);
     }
 }

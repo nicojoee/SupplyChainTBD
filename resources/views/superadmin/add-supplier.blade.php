@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Add Supplier Account')
+@section('title', 'Add Supplier')
 
 @section('content')
-<div class="card" style="max-width: 500px; margin: 0 auto;">
+<div class="card" style="max-width: 600px; margin: 0 auto;">
     <div class="card-header">
-        <h2 class="card-title">📦 Add Supplier Account</h2>
+        <h2 class="card-title">📦 Add Supplier</h2>
     </div>
     <p style="color: rgba(255,255,255,0.6); margin-bottom: 1.5rem;">
-        Create a supplier account. The user will fill in their company details when they first login.
+        Create a new supplier with location.
     </p>
 
     @if($errors->any())
@@ -23,19 +23,38 @@
 
     <form action="{{ route('superadmin.store.supplier') }}" method="POST">
         @csrf
-        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
-            <div style="font-weight: 600; color: #22c55e; margin-bottom: 0.5rem;">📧 Google Account Email</div>
-            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">This email will be used to login via Google OAuth.</div>
+        <div class="form-group">
+            <label class="form-label">Company Name *</label>
+            <input type="text" name="name" class="form-control" required placeholder="Enter company name" value="{{ old('name') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Google Account Email *</label>
+            <input type="email" name="email" class="form-control" required placeholder="supplier@example.com" value="{{ old('email') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Address *</label>
+            <input type="text" name="address" class="form-control" required placeholder="Full address" value="{{ old('address') }}">
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Latitude *</label>
+                <input type="number" step="any" name="latitude" class="form-control" required placeholder="-6.2088" value="{{ old('latitude', request('lat', '')) }}">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Longitude *</label>
+                <input type="number" step="any" name="longitude" class="form-control" required placeholder="106.8456" value="{{ old('longitude', request('lng', '')) }}">
+            </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Email Address *</label>
-            <input type="email" name="email" class="form-control" required placeholder="supplier@example.com" value="{{ old('email') }}">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" placeholder="+62..." value="{{ old('phone') }}">
         </div>
 
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <a href="{{ route('superadmin.suppliers') }}" class="btn btn-danger" style="flex: 1;">Cancel</a>
-            <button type="submit" class="btn btn-success" style="flex: 1;">Create Account</button>
+            <a href="{{ route('dashboard') }}" class="btn btn-danger" style="flex: 1;">Cancel</a>
+            <button type="submit" class="btn btn-success" style="flex: 1;">Create Supplier</button>
         </div>
     </form>
 </div>

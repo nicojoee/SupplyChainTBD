@@ -60,7 +60,93 @@ class DashboardController extends Controller
             ];
         }
 
-        return view('dashboard', compact('suppliers', 'factories', 'distributors', 'couriers', 'selfEntity'));
+        // Get user's products (for selling tab)
+        $myProducts = collect();
+        if ($user->role === 'supplier' && $user->supplier) {
+            $myProducts = $user->supplier->products()->with('product')->get();
+        } elseif ($user->role === 'factory' && $user->factory) {
+            $myProducts = $user->factory->products()->with('product')->get();
+        } elseif ($user->role === 'distributor' && $user->distributor) {
+            $myProducts = $user->distributor->stocks()->with('product')->get();
+        }
+
+        // Get user's orders (for buying tab)
+        $myOrders = collect();
+        if ($user->role === 'factory' && $user->factory) {
+            $myOrders = \App\Models\Order::where('buyer_type', 'factory')
+                ->where('buyer_id', $user->factory->id)
+                ->with(['items.product', 'sellerSupplier'])
+                ->latest()
+                ->take(10)
+                ->get();
+        } elseif ($user->role === 'distributor' && $user->distributor) {
+            $myOrders = \App\Models\Order::where('buyer_type', 'distributor')
+                ->where('buyer_id', $user->distributor->id)
+                ->with(['items.product', 'sellerFactory'])
+                ->latest()
+                ->take(10)
+                ->get();
+        }
+
+        // Get marketplace products (products user can buy)
+        $marketplace = collect();
+        $userLat = $selfEntity['latitude'] ?? 0;
+        $userLng = $selfEntity['longitude'] ?? 0;
+        
+        if ($user->role === 'factory' && $user->factory) {
+            // Factory can buy from Suppliers
+            $marketplace = \App\Models\SupplierProduct::with(['supplier', 'product'])
+                ->whereHas('supplier')
+                ->get()
+                ->map(function ($sp) use ($userLat, $userLng) {
+                    $distance = $this->calculateDistance($userLat, $userLng, $sp->supplier->latitude ?? 0, $sp->supplier->longitude ?? 0);
+                    return [
+                        'id' => $sp->id,
+                        'product_name' => $sp->product->name ?? 'Unknown',
+                        'price' => $sp->price,
+                        'stock' => $sp->stock_quantity,
+                        'seller_id' => $sp->supplier_id,
+                        'seller_name' => $sp->supplier->name ?? 'Unknown',
+                        'seller_type' => 'supplier',
+                        'distance' => $distance,
+                    ];
+                })
+                ->sortBy('distance');
+        } elseif ($user->role === 'distributor' && $user->distributor) {
+            // Distributor can buy from Factories
+            $marketplace = \App\Models\FactoryProduct::with(['factory', 'product'])
+                ->whereHas('factory')
+                ->get()
+                ->map(function ($fp) use ($userLat, $userLng) {
+                    $distance = $this->calculateDistance($userLat, $userLng, $fp->factory->latitude ?? 0, $fp->factory->longitude ?? 0);
+                    return [
+                        'id' => $fp->id,
+                        'product_name' => $fp->product->name ?? 'Unknown',
+                        'price' => $fp->price,
+                        'stock' => $fp->production_quantity,
+                        'seller_id' => $fp->factory_id,
+                        'seller_name' => $fp->factory->name ?? 'Unknown',
+                        'seller_type' => 'factory',
+                        'distance' => $distance,
+                    ];
+                })
+                ->sortBy('distance');
+        }
+
+        return view('dashboard', compact('suppliers', 'factories', 'distributors', 'couriers', 'selfEntity', 'myProducts', 'myOrders', 'marketplace'));
+    }
+
+    // Haversine distance calculation (returns km)
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $R = 6371; // Earth's radius in km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat/2) * sin($dLat/2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon/2) * sin($dLon/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        return round($R * $c, 1);
     }
 
     public function mapData()
@@ -153,11 +239,24 @@ class DashboardController extends Controller
             ];
         }
 
-        // Show all couriers, use default location if not set
+        // Show couriers - only those with saved position
+        // Couriers without position (never tracked) won't appear on map
         $couriers = Courier::all();
         foreach ($couriers as $courier) {
-            $lat = $courier->current_latitude ?? -6.2088;  // Default: Jakarta
-            $lng = $courier->current_longitude ?? 106.8456;
+            // Skip couriers without position
+            if ($courier->current_latitude === null || $courier->current_longitude === null) {
+                continue;
+            }
+            
+            $lat = (float) $courier->current_latitude;
+            $lng = (float) $courier->current_longitude;
+            $isGpsActive = (bool) $courier->is_gps_active;
+            
+            // Calculate time since last update
+            $lastSeen = null;
+            if ($courier->location_updated_at) {
+                $lastSeen = $courier->location_updated_at->diffForHumans();
+            }
             
             $features[] = [
                 'type' => 'Feature',
@@ -169,11 +268,12 @@ class DashboardController extends Controller
                     'license_plate' => $courier->license_plate,
                     'phone' => $courier->phone,
                     'status' => $courier->status,
-                    'has_location' => $courier->current_latitude !== null,
+                    'is_gps_active' => $isGpsActive,
+                    'last_seen' => $lastSeen,
                 ],
                 'geometry' => [
                     'type' => 'Point',
-                    'coordinates' => [(float)$lng, (float)$lat],
+                    'coordinates' => [$lng, $lat],
                 ],
             ];
         }
@@ -235,5 +335,91 @@ class DashboardController extends Controller
             'last_page' => $couriers->lastPage(),
             'total' => $couriers->total(),
         ]);
+    }
+
+    // Search entities by name for map auto-locate
+    public function searchEntities(Request $request)
+    {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $results = [];
+
+        // Search Suppliers
+        $suppliers = Supplier::where('name', 'LIKE', "%{$query}%")
+            ->select('id', 'name', 'address', 'latitude', 'longitude')
+            ->limit(5)
+            ->get();
+
+        foreach ($suppliers as $supplier) {
+            $results[] = [
+                'id' => $supplier->id,
+                'name' => $supplier->name,
+                'type' => 'supplier',
+                'icon' => '📦',
+                'address' => $supplier->address,
+                'latitude' => (float) $supplier->latitude,
+                'longitude' => (float) $supplier->longitude,
+            ];
+        }
+
+        // Search Factories
+        $factories = Factory::where('name', 'LIKE', "%{$query}%")
+            ->select('id', 'name', 'address', 'latitude', 'longitude')
+            ->limit(5)
+            ->get();
+
+        foreach ($factories as $factory) {
+            $results[] = [
+                'id' => $factory->id,
+                'name' => $factory->name,
+                'type' => 'factory',
+                'icon' => '🏭',
+                'address' => $factory->address,
+                'latitude' => (float) $factory->latitude,
+                'longitude' => (float) $factory->longitude,
+            ];
+        }
+
+        // Search Distributors
+        $distributors = Distributor::where('name', 'LIKE', "%{$query}%")
+            ->select('id', 'name', 'address', 'latitude', 'longitude')
+            ->limit(5)
+            ->get();
+
+        foreach ($distributors as $distributor) {
+            $results[] = [
+                'id' => $distributor->id,
+                'name' => $distributor->name,
+                'type' => 'distributor',
+                'icon' => '🚚',
+                'address' => $distributor->address,
+                'latitude' => (float) $distributor->latitude,
+                'longitude' => (float) $distributor->longitude,
+            ];
+        }
+
+        // Search Couriers
+        $couriers = Courier::where('name', 'LIKE', "%{$query}%")
+            ->select('id', 'name', 'phone', 'current_latitude', 'current_longitude', 'status')
+            ->limit(5)
+            ->get();
+
+        foreach ($couriers as $courier) {
+            $results[] = [
+                'id' => $courier->id,
+                'name' => $courier->name,
+                'type' => 'courier',
+                'icon' => '🛵',
+                'address' => 'Status: ' . ucfirst($courier->status),
+                'latitude' => (float) ($courier->current_latitude ?? -6.2088),
+                'longitude' => (float) ($courier->current_longitude ?? 106.8456),
+            ];
+        }
+
+        return response()->json($results);
     }
 }

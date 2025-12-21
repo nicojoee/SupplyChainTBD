@@ -83,14 +83,8 @@ class AuthController extends Controller
 
     protected function redirectBasedOnRole(User $user)
     {
-        return match ($user->role) {
-            'superadmin' => redirect()->route('superadmin.index'),
-            'supplier' => redirect()->route('supplier.index'),
-            'factory' => redirect()->route('factory.index'),
-            'distributor' => redirect()->route('distributor.index'),
-            'courier' => redirect()->route('courier.index'),
-            default => redirect()->route('dashboard'),
-        };
+        // All roles redirect to dashboard after login
+        return redirect()->route('dashboard');
     }
 
     public function logoutConfirm()

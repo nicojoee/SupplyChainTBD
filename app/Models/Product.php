@@ -21,6 +21,30 @@ class Product extends Model
         'base_price' => 'decimal:2',
     ];
 
+    // Finished product names (only Factory can sell these)
+    public static $finishedProducts = [
+        'Refined Cooking Oil',
+        'Premium Olive Oil',
+    ];
+
+    // Scope for raw materials (Supplier can sell these)
+    public function scopeRawMaterials($query)
+    {
+        return $query->whereNotIn('name', self::$finishedProducts);
+    }
+
+    // Scope for finished products (Factory can sell these)
+    public function scopeFinishedProducts($query)
+    {
+        return $query->whereIn('name', self::$finishedProducts);
+    }
+
+    // Check if product is a finished product
+    public function isFinishedProduct()
+    {
+        return in_array($this->name, self::$finishedProducts);
+    }
+
     public function supplierProducts()
     {
         return $this->hasMany(SupplierProduct::class);

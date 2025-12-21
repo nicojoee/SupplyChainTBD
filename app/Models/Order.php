@@ -55,4 +55,25 @@ class Order extends Model
     {
         return 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
     }
+
+    // Specific relations for eager loading
+    public function buyerFactory()
+    {
+        return $this->belongsTo(Factory::class, 'buyer_id');
+    }
+
+    public function buyerDistributor()
+    {
+        return $this->belongsTo(Distributor::class, 'buyer_id');
+    }
+
+    public function sellerSupplier()
+    {
+        return $this->belongsTo(Supplier::class, 'seller_id');
+    }
+
+    public function sellerFactory()
+    {
+        return $this->belongsTo(Factory::class, 'seller_id');
+    }
 }

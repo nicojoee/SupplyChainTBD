@@ -1,14 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Add Factory Account')
+@section('title', 'Add Factory')
 
 @section('content')
-<div class="card" style="max-width: 500px; margin: 0 auto;">
+<div class="card" style="max-width: 600px; margin: 0 auto;">
     <div class="card-header">
-        <h2 class="card-title">🏭 Add Factory Account</h2>
+        <h2 class="card-title">🏭 Add Factory</h2>
     </div>
     <p style="color: rgba(255,255,255,0.6); margin-bottom: 1.5rem;">
-        Create a factory account. The user will fill in their factory details when they first login.
+        Create a new factory with location.
     </p>
 
     @if($errors->any())
@@ -23,19 +23,42 @@
 
     <form action="{{ route('superadmin.store.factory') }}" method="POST">
         @csrf
-        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
-            <div style="font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">📧 Google Account Email</div>
-            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">This email will be used to login via Google OAuth.</div>
+        <div class="form-group">
+            <label class="form-label">Factory Name *</label>
+            <input type="text" name="name" class="form-control" required placeholder="Enter factory name" value="{{ old('name') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Google Account Email *</label>
+            <input type="email" name="email" class="form-control" required placeholder="factory@example.com" value="{{ old('email') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Address *</label>
+            <input type="text" name="address" class="form-control" required placeholder="Full address" value="{{ old('address') }}">
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Latitude *</label>
+                <input type="number" step="any" name="latitude" class="form-control" required placeholder="-6.2088" value="{{ old('latitude', request('lat', '')) }}">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label class="form-label">Longitude *</label>
+                <input type="number" step="any" name="longitude" class="form-control" required placeholder="106.8456" value="{{ old('longitude', request('lng', '')) }}">
+            </div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Email Address *</label>
-            <input type="email" name="email" class="form-control" required placeholder="factory@example.com" value="{{ old('email') }}">
+            <label class="form-label">Production Capacity (units) *</label>
+            <input type="number" name="production_capacity" class="form-control" min="0" required placeholder="10000" value="{{ old('production_capacity') }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="text" name="phone" class="form-control" placeholder="+62..." value="{{ old('phone') }}">
         </div>
 
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-            <a href="{{ route('superadmin.factories') }}" class="btn btn-danger" style="flex: 1;">Cancel</a>
-            <button type="submit" class="btn btn-warning" style="flex: 1;">Create Account</button>
+            <a href="{{ route('dashboard') }}" class="btn btn-danger" style="flex: 1;">Cancel</a>
+            <button type="submit" class="btn btn-warning" style="flex: 1;">Create Factory</button>
         </div>
     </form>
 </div>
