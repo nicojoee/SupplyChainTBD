@@ -25,14 +25,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logout', [AuthController::class, 'logoutConfirm'])->name('logout.confirm');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('/api/map-data', [DashboardController::class, 'mapData'])->name('api.map-data');
+    Route::get('/map-data', [DashboardController::class, 'mapData'])->name('api.map-data');
     
     // AJAX pagination routes for dashboard
-    Route::get('/api/suppliers', [DashboardController::class, 'suppliersAjax'])->name('api.suppliers');
-    Route::get('/api/factories', [DashboardController::class, 'factoriesAjax'])->name('api.factories');
-    Route::get('/api/distributors', [DashboardController::class, 'distributorsAjax'])->name('api.distributors');
-    Route::get('/api/couriers', [DashboardController::class, 'couriersAjax'])->name('api.couriers');
-    Route::get('/api/search', [DashboardController::class, 'searchEntities'])->name('api.search');
+    Route::get('/suppliers-ajax', [DashboardController::class, 'suppliersAjax'])->name('api.suppliers');
+    Route::get('/factories-ajax', [DashboardController::class, 'factoriesAjax'])->name('api.factories');
+    Route::get('/distributors-ajax', [DashboardController::class, 'distributorsAjax'])->name('api.distributors');
+    Route::get('/couriers-ajax', [DashboardController::class, 'couriersAjax'])->name('api.couriers');
+    Route::get('/search-entities', [DashboardController::class, 'searchEntities'])->name('api.search');
 
     // Chat routes
     Route::prefix('chat')->name('chat.')->group(function () {
