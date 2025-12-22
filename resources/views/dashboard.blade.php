@@ -77,6 +77,39 @@
         background: linear-gradient(135deg, #ec4899, #8b5cf6);
         animation: selfPulse 2s infinite ease-in-out;
     }
+
+    /* Location pulse animation for auto-locate marker */
+    @keyframes locationPulse {
+        0% {
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 8px rgba(0,0,0,0.3);
+            transform: scale(1);
+        }
+        50% {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 2px 12px rgba(0,0,0,0.4);
+            transform: scale(1.1);
+        }
+        100% {
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 2px 8px rgba(0,0,0,0.3);
+            transform: scale(1);
+        }
+    }
+
+    /* Button pulse animation for loading state */
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Auto-locate button responsive */
+    @media (max-width: 480px) {
+        #auto-locate-btn {
+            bottom: 15px !important;
+            right: 15px !important;
+            width: 44px !important;
+            height: 44px !important;
+        }
+    }
 </style>
 @endsection
 
@@ -131,8 +164,19 @@
             </button>
         </div>
     </div>
-    <div class="map-container">
+    <div class="map-container" style="position: relative;">
         <div id="map"></div>
+        <!-- Auto-Locate Button - Bottom Right -->
+        <button id="auto-locate-btn" onclick="autoLocateMe()" 
+                style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; 
+                       width: 48px; height: 48px; border-radius: 50%; 
+                       background: linear-gradient(135deg, #3b82f6, #2563eb); 
+                       border: 3px solid white; color: white; font-size: 1.25rem;
+                       cursor: pointer; display: flex; align-items: center; justify-content: center;
+                       box-shadow: 0 4px 15px rgba(0,0,0,0.4);"
+                title="Locate Me">
+            📍
+        </button>
     </div>
 </div>
 
@@ -389,7 +433,7 @@
         
         if (!document.fullscreenElement) {
             mapCard.requestFullscreen().then(() => {
-                btn.innerHTML = '✕ Exit Fullscreen';
+                btn.innerHTML = '✕ Exit';
                 mapCard.style.borderRadius = '0';
                 setTimeout(() => map.invalidateSize(), 100);
             }).catch(err => {
@@ -397,11 +441,113 @@
             });
         } else {
             document.exitFullscreen().then(() => {
-                btn.innerHTML = '⛶ Fullscreen';
+                btn.innerHTML = '⛶ Full';
                 mapCard.style.borderRadius = '';
                 setTimeout(() => map.invalidateSize(), 100);
             });
         }
+    }
+
+    // Auto-Locate Me function - GPS based location
+    let myLocationMarker = null;
+    let isLocating = false;
+
+    function autoLocateMe() {
+        const btn = document.getElementById('auto-locate-btn');
+        
+        if (!navigator.geolocation) {
+            alert('GPS tidak didukung di browser ini.');
+            return;
+        }
+
+        if (isLocating) return;
+        isLocating = true;
+
+        // Visual feedback - loading state
+        btn.innerHTML = '⏳';
+        btn.style.animation = 'pulse 1s infinite';
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+
+                console.log('📍 Auto-locate success:', lat, lng, '±' + accuracy + 'm');
+
+                // Create or update my location marker
+                const myLocationIcon = L.divIcon({
+                    className: 'my-location-marker',
+                    html: `<div style="
+                        width: 24px; height: 24px; 
+                        background: linear-gradient(135deg, #3b82f6, #2563eb); 
+                        border: 3px solid white; 
+                        border-radius: 50%; 
+                        box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 2px 8px rgba(0,0,0,0.3);
+                        animation: locationPulse 2s infinite;
+                    "></div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                if (myLocationMarker) {
+                    myLocationMarker.setLatLng([lat, lng]);
+                } else {
+                    myLocationMarker = L.marker([lat, lng], { icon: myLocationIcon, zIndexOffset: 1000 })
+                        .addTo(map)
+                        .bindPopup(`
+                            <div style="text-align: center;">
+                                <strong>📍 Lokasi Anda</strong><br>
+                                <span style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">
+                                    ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                                    Akurasi: ±${Math.round(accuracy)}m
+                                </span>
+                            </div>
+                        `);
+                }
+
+                // Zoom to location with appropriate zoom level
+                const zoomLevel = accuracy < 50 ? 17 : accuracy < 200 ? 15 : 13;
+                map.setView([lat, lng], zoomLevel);
+                myLocationMarker.openPopup();
+
+                // Reset button
+                btn.innerHTML = '📍';
+                btn.style.animation = '';
+                isLocating = false;
+
+                // For courier: also update server location
+                @if(auth()->user()->role === 'courier')
+                sendCourierLocationToServer(lat, lng, true, accuracy);
+                @endif
+            },
+            function(error) {
+                console.error('GPS Error:', error);
+                let errorMsg = 'Gagal mendapatkan lokasi.';
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = 'Izin GPS ditolak. Aktifkan GPS di pengaturan browser.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = 'Lokasi tidak tersedia. Pastikan GPS aktif.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = 'Timeout. Coba lagi.';
+                        break;
+                }
+                
+                alert(errorMsg);
+                btn.innerHTML = '📍';
+                btn.style.animation = '';
+                isLocating = false;
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+        );
     }
 
     // Listen for fullscreen change (ESC key exit)
@@ -895,6 +1041,13 @@
             console.log('Self Entity Data:', selfEntity);
 
             // Auto-zoom to self entity if exists with valid coordinates, otherwise fit all bounds
+            @if(auth()->user()->role === 'courier')
+            // For courier: use GPS auto-locate for accurate real-time position
+            console.log('Courier detected - triggering GPS auto-locate...');
+            setTimeout(() => {
+                autoLocateMe();
+            }, 1000);
+            @else
             if (selfEntity && selfEntity.latitude && selfEntity.longitude && 
                 selfEntity.latitude !== 0 && selfEntity.longitude !== 0) {
                 console.log('Auto-zooming to self location:', selfEntity.latitude, selfEntity.longitude);
@@ -909,6 +1062,7 @@
                 );
                 map.fitBounds(group.getBounds().pad(0.1));
             }
+            @endif
         })
         .catch(err => console.error('Error loading map data:', err));
 
