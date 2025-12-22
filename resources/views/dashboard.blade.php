@@ -222,17 +222,30 @@
         </div>
     </div>
     
-    <!-- GPS Info -->
+    <!-- GPS Info with Accuracy -->
     <div style="padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-glass);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <span style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">📍 Current Position:</span>
-            <span id="courier-current-coords" style="font-family: monospace;">
-                @if(auth()->user()->courier && auth()->user()->courier->current_latitude)
-                    {{ auth()->user()->courier->current_latitude }}, {{ auth()->user()->courier->current_longitude }}
-                @else
-                    Not set
-                @endif
-            </span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; text-align: center;">
+            <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">LATITUDE</div>
+                <div id="courier-lat" style="font-family: monospace; font-weight: 600;">
+                    {{ auth()->user()->courier && auth()->user()->courier->current_latitude ? number_format(auth()->user()->courier->current_latitude, 6) : '-' }}
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">LONGITUDE</div>
+                <div id="courier-lng" style="font-family: monospace; font-weight: 600;">
+                    {{ auth()->user()->courier && auth()->user()->courier->current_longitude ? number_format(auth()->user()->courier->current_longitude, 6) : '-' }}
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">AKURASI</div>
+                <div id="courier-accuracy" style="font-weight: 600;">-</div>
+                <div id="courier-accuracy-label" style="font-size: 0.65rem;"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">UPDATE</div>
+                <div id="courier-last-update" style="font-size: 0.9rem;">-</div>
+            </div>
         </div>
     </div>
 
@@ -1041,8 +1054,9 @@
                         `;
 
                         if (courierMarkers[courierId]) {
-                            // Update existing marker position
+                            // Update existing marker position, icon, and popup
                             courierMarkers[courierId].setLatLng([coords[1], coords[0]]);
+                            courierMarkers[courierId].setIcon(icon);
                             courierMarkers[courierId].setPopupContent(popupContent);
                         } else {
                             // Create new marker
@@ -1273,12 +1287,15 @@
     @endif
 
     // ========================================
-    // COURIER GPS TRACKING (Dashboard)
+    // IMPROVED COURIER GPS TRACKING (Dashboard)
+    // Using watchPosition for real-time accuracy
     // ========================================
     @if(auth()->user()->role === 'courier')
-    let courierGpsInterval = null;
+    let courierWatchId = null;
     let isCourierGpsTracking = false;
     let courierSelfMarker = null;
+    let courierLastSentLocation = null;
+    let courierSendThrottle = null;
     
     // Find the courier's own marker on the map
     function findCourierSelfMarker() {
@@ -1299,87 +1316,182 @@
     function startCourierGPS() {
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by this browser.');
-            document.getElementById('courier-gps-status').innerHTML = '❌ Not Supported';
-            document.getElementById('courier-gps-status').classList.remove('badge-warning', 'badge-success');
-            document.getElementById('courier-gps-status').classList.add('badge-danger');
+            updateCourierGpsStatus('❌ Not Supported', 'badge-danger');
             return;
         }
+        
+        if (courierWatchId !== null) return; // Already tracking
 
+        updateCourierGpsStatus('🔄 Detecting...', 'badge-warning');
+        document.getElementById('toggle-gps-btn').innerHTML = '⏳ Starting...';
+        document.getElementById('toggle-gps-btn').disabled = true;
+
+        // Use watchPosition for real-time continuous updates
+        courierWatchId = navigator.geolocation.watchPosition(
+            onCourierGpsSuccess,
+            onCourierGpsError,
+            {
+                enableHighAccuracy: true,  // Use GPS hardware
+                timeout: 15000,            // 15 second timeout
+                maximumAge: 0              // Don't use cached position
+            }
+        );
+        
         isCourierGpsTracking = true;
         document.getElementById('toggle-gps-btn').innerHTML = '⏹️ Stop GPS';
         document.getElementById('toggle-gps-btn').classList.remove('btn-success');
         document.getElementById('toggle-gps-btn').classList.add('btn-danger');
-        document.getElementById('courier-gps-status').innerHTML = '🔄 Detecting...';
-        document.getElementById('courier-gps-status').classList.remove('badge-success', 'badge-danger');
-        document.getElementById('courier-gps-status').classList.add('badge-warning');
-
-        // Update immediately
-        updateCourierGPSLocation();
-
-        // Update every 5 seconds
-        courierGpsInterval = setInterval(updateCourierGPSLocation, 5000);
+        document.getElementById('toggle-gps-btn').disabled = false;
+        
+        console.log('📍 Dashboard GPS watchPosition started, ID:', courierWatchId);
     }
 
     function stopCourierGPS() {
-        isCourierGpsTracking = false;
-        if (courierGpsInterval) {
-            clearInterval(courierGpsInterval);
-            courierGpsInterval = null;
+        if (courierWatchId !== null) {
+            navigator.geolocation.clearWatch(courierWatchId);
+            courierWatchId = null;
+            console.log('📍 Dashboard GPS watchPosition stopped');
         }
+        
+        isCourierGpsTracking = false;
         document.getElementById('toggle-gps-btn').innerHTML = '▶️ Start GPS';
         document.getElementById('toggle-gps-btn').classList.remove('btn-danger');
         document.getElementById('toggle-gps-btn').classList.add('btn-success');
-        document.getElementById('courier-gps-status').innerHTML = '⏸️ Paused';
-        document.getElementById('courier-gps-status').classList.remove('badge-success', 'badge-danger');
-        document.getElementById('courier-gps-status').classList.add('badge-warning');
+        updateCourierGpsStatus('⏸️ Paused', 'badge-warning');
+        
+        // Send inactive status
+        if (courierLastSentLocation) {
+            sendCourierLocationToServer(courierLastSentLocation.lat, courierLastSentLocation.lng, false);
+        }
+    }
+    
+    function onCourierGpsSuccess(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const accuracy = position.coords.accuracy;
+        const timestamp = new Date(position.timestamp);
+
+        console.log(`📍 Dashboard GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${accuracy.toFixed(0)}m)`);
+
+        // Update status
+        updateCourierGpsStatus('🟢 GPS Active', 'badge-success');
+
+        // Update coordinates display
+        document.getElementById('courier-lat').textContent = lat.toFixed(6);
+        document.getElementById('courier-lng').textContent = lng.toFixed(6);
+        document.getElementById('courier-accuracy').textContent = `±${Math.round(accuracy)}m`;
+        document.getElementById('courier-last-update').textContent = timestamp.toLocaleTimeString('id-ID');
+        
+        // Update accuracy indicator color
+        updateCourierAccuracyColor(accuracy);
+
+        // Update marker on map with GPS status
+        findCourierSelfMarker();
+        const selfPopupContent = `
+            <strong>${selfEntity ? selfEntity.name : 'Courier'}</strong>
+            <span style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: 6px;">YOU</span>
+            <div style="margin: 8px 0;"><span style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">📍 GPS Aktif</span></div>
+            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">🎯 Akurasi: ±${Math.round(accuracy)}m</div>
+        `;
+        
+        if (courierSelfMarker) {
+            courierSelfMarker.setLatLng([lat, lng]);
+            courierSelfMarker.setPopupContent(selfPopupContent);
+        } else if (selfEntity && selfEntity.type === 'courier') {
+            courierSelfMarker = L.marker([lat, lng], { icon: icons.selfCourier })
+                .addTo(map)
+                .bindPopup(selfPopupContent);
+            allMarkers[`courier-${selfEntity.id}`] = courierSelfMarker;
+        }
+
+        // Throttled send to server
+        throttledCourierSend(lat, lng, accuracy);
+    }
+    
+    function onCourierGpsError(error) {
+        console.error('GPS Error:', error.code, error.message);
+        
+        let errorMsg = '';
+        let statusClass = 'badge-danger';
+        
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                errorMsg = '🚫 Permission Denied';
+                showCourierPermissionHelp();
+                break;
+            case error.POSITION_UNAVAILABLE:
+                errorMsg = '📡 Signal Unavailable';
+                statusClass = 'badge-warning';
+                break;
+            case error.TIMEOUT:
+                errorMsg = '⏱️ Timeout...';
+                statusClass = 'badge-warning';
+                break;
+            default:
+                errorMsg = '⚠️ GPS Error';
+                break;
+        }
+        
+        updateCourierGpsStatus(errorMsg, statusClass);
+    }
+    
+    function updateCourierAccuracyColor(accuracy) {
+        const el = document.getElementById('courier-accuracy');
+        const label = document.getElementById('courier-accuracy-label');
+        let color, text;
+        
+        if (accuracy < 10) {
+            color = '#22c55e'; text = '🎯 Excellent';
+        } else if (accuracy < 30) {
+            color = '#84cc16'; text = '✅ Good';
+        } else if (accuracy < 100) {
+            color = '#f59e0b'; text = '⚠️ Fair';
+        } else {
+            color = '#ef4444'; text = '❌ Poor';
+        }
+        
+        el.style.color = color;
+        label.innerHTML = `<span style="color: ${color}">${text}</span>`;
+    }
+    
+    function updateCourierGpsStatus(text, badgeClass) {
+        const el = document.getElementById('courier-gps-status');
+        el.innerHTML = text;
+        el.className = 'badge ' + badgeClass;
+    }
+    
+    function throttledCourierSend(lat, lng, accuracy) {
+        if (courierSendThrottle) clearTimeout(courierSendThrottle);
+        
+        const locationData = { lat, lng, accuracy };
+        const shouldSendNow = !courierLastSentLocation || 
+            calculateCourierDistance(courierLastSentLocation.lat, courierLastSentLocation.lng, lat, lng) > 10;
+        
+        if (shouldSendNow) {
+            sendCourierLocationToServer(lat, lng, true, accuracy);
+            courierLastSentLocation = locationData;
+        } else {
+            courierSendThrottle = setTimeout(() => {
+                sendCourierLocationToServer(lat, lng, true, accuracy);
+                courierLastSentLocation = locationData;
+            }, 3000);
+        }
+    }
+    
+    function calculateCourierDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371000;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    function updateCourierGPSLocation() {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-
-                console.log('📍 Courier GPS:', lat.toFixed(6), lng.toFixed(6));
-
-                // Update status
-                document.getElementById('courier-gps-status').innerHTML = '🟢 GPS Active';
-                document.getElementById('courier-gps-status').classList.remove('badge-warning', 'badge-danger');
-                document.getElementById('courier-gps-status').classList.add('badge-success');
-
-                // Update coordinates display
-                document.getElementById('courier-current-coords').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
-
-                // Update marker on map
-                findCourierSelfMarker();
-                if (courierSelfMarker) {
-                    courierSelfMarker.setLatLng([lat, lng]);
-                } else if (selfEntity && selfEntity.type === 'courier') {
-                    // Create new marker if not found
-                    courierSelfMarker = L.marker([lat, lng], { icon: icons.selfCourier })
-                        .addTo(map)
-                        .bindPopup('<strong>' + selfEntity.name + '</strong><br><span style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem;">YOU</span>');
-                    allMarkers[`courier-${selfEntity.id}`] = courierSelfMarker;
-                }
-
-                // Send to server
-                sendCourierLocationToServer(lat, lng, true);
-            },
-            function(error) {
-                console.error('GPS Error:', error.code, error.message);
-                document.getElementById('courier-gps-status').innerHTML = '⚠️ GPS Error';
-                document.getElementById('courier-gps-status').classList.remove('badge-success');
-                document.getElementById('courier-gps-status').classList.add('badge-warning');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
-    }
-
-    function sendCourierLocationToServer(lat, lng, isGpsActive) {
+    function sendCourierLocationToServer(lat, lng, isGpsActive, accuracy = null) {
+        if (!lat || !lng) return;
+        
         fetch('{{ route("courier.location") }}', {
             method: 'POST',
             headers: {
@@ -1389,7 +1501,8 @@
             body: JSON.stringify({ 
                 latitude: lat, 
                 longitude: lng,
-                is_gps_active: isGpsActive
+                is_gps_active: isGpsActive,
+                accuracy: accuracy
             })
         })
         .then(res => res.json())
@@ -1402,27 +1515,62 @@
             console.error('Server Error:', err);
         });
     }
+    
+    function showCourierPermissionHelp() {
+        const btn = document.getElementById('toggle-gps-btn');
+        if (btn) {
+            btn.innerHTML = '🔓 Enable GPS';
+            btn.classList.remove('btn-success', 'btn-danger');
+            btn.classList.add('btn-warning');
+            btn.onclick = function() {
+                alert('GPS Permission Denied!\n\nTo enable GPS:\n\n1. Click the lock/info icon in browser address bar\n2. Select "Site settings"\n3. Change "Location" to "Allow"\n4. Refresh this page');
+            };
+        }
+    }
 
     // Auto-start GPS on page load for courier
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🛵 Courier Dashboard GPS - Initializing...');
+        console.log('🛵 Dashboard GPS - Initializing with watchPosition...');
         
-        // Check for GPS support and auto-start
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    console.log('✅ GPS Permission granted');
+        if (!navigator.geolocation) {
+            updateCourierGpsStatus('❌ GPS Not Supported', 'badge-danger');
+            return;
+        }
+        
+        // Check permission state if available
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'geolocation' }).then(function(result) {
+                console.log('GPS Permission status:', result.state);
+                
+                if (result.state === 'granted') {
+                    updateCourierGpsStatus('✅ GPS Ready', 'badge-success');
                     startCourierGPS();
-                },
-                function(error) {
-                    console.warn('⚠️ GPS Error on init:', error.message);
-                    document.getElementById('courier-gps-status').innerHTML = '⚠️ Click Start GPS';
-                    document.getElementById('courier-gps-status').classList.add('badge-warning');
+                } else if (result.state === 'denied') {
+                    updateCourierGpsStatus('🚫 GPS Denied', 'badge-danger');
+                    showCourierPermissionHelp();
+                } else {
+                    updateCourierGpsStatus('📍 Click Start GPS', 'badge-info');
                 }
-            );
+                
+                result.onchange = function() {
+                    if (this.state === 'granted' && !isCourierGpsTracking) {
+                        startCourierGPS();
+                    }
+                };
+            });
         } else {
-            document.getElementById('courier-gps-status').innerHTML = '❌ GPS Not Supported';
-            document.getElementById('courier-gps-status').classList.add('badge-danger');
+            // Fallback: try to start and see what happens
+            startCourierGPS();
+        }
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function() {
+        if (courierWatchId !== null) {
+            navigator.geolocation.clearWatch(courierWatchId);
+            if (courierLastSentLocation) {
+                sendCourierLocationToServer(courierLastSentLocation.lat, courierLastSentLocation.lng, false);
+            }
         }
     });
     @endif
