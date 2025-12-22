@@ -42,7 +42,7 @@ Route::get('/fix-couriers', function () {
             \App\Models\Courier::create([
                 'user_id' => $user->id,
                 'name' => $user->name,
-                'status' => 'available',
+                'status' => 'idle',
             ]);
             $fixed++;
         }

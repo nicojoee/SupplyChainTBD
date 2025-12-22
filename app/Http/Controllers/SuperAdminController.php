@@ -186,7 +186,7 @@ class SuperAdminController extends Controller
         Courier::create([
             'user_id' => $user->id,
             'name' => $user->name,
-            'status' => 'available',
+            'status' => 'idle',
         ]);
 
         return redirect()->route('superadmin.couriers')->with('success', 'Courier account created! They can now login with Google.');
