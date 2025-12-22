@@ -1125,6 +1125,156 @@
         });
     </script>
     
+    {{-- Auto GPS Tracking for Couriers - runs on ALL pages while logged in --}}
+    @auth
+    @if(auth()->user()->role === 'courier' && auth()->user()->courier)
+    <script>
+        // ==========================================
+        // AUTO GPS TRACKING FOR COURIERS
+        // Runs globally on all pages while logged in
+        // ==========================================
+        (function() {
+            let courierGpsWatchId = null;
+            let courierLastLocation = null;
+            const COURIER_ID = {{ auth()->user()->courier->id ?? 0 }};
+            const GPS_UPDATE_ROUTE = '{{ route("courier.location") }}';
+            const CSRF_TOKEN = '{{ csrf_token() }}';
+            
+            console.log('🛵 [Courier GPS] Auto-tracking initialized for courier ID:', COURIER_ID);
+            
+            // Check if Geolocation is supported
+            if (!navigator.geolocation) {
+                console.warn('🛵 [Courier GPS] Geolocation not supported');
+                return;
+            }
+            
+            // Start GPS tracking automatically
+            function startCourierGpsTracking() {
+                if (courierGpsWatchId !== null) {
+                    console.log('🛵 [Courier GPS] Already tracking');
+                    return;
+                }
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 30000,
+                    maximumAge: 0
+                };
+                
+                courierGpsWatchId = navigator.geolocation.watchPosition(
+                    onCourierGpsSuccess,
+                    onCourierGpsError,
+                    options
+                );
+                
+                console.log('🛵 [Courier GPS] watchPosition started, ID:', courierGpsWatchId);
+            }
+            
+            // GPS success callback
+            function onCourierGpsSuccess(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                console.log(`🛵 [Courier GPS] Position: ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${accuracy.toFixed(0)}m)`);
+                
+                // Send to server (throttled - only if moved > 5 meters or first time)
+                const shouldSend = !courierLastLocation || 
+                    calculateCourierDistance(courierLastLocation.lat, courierLastLocation.lng, lat, lng) > 5;
+                
+                if (shouldSend) {
+                    sendCourierLocation(lat, lng, accuracy);
+                    courierLastLocation = { lat, lng, accuracy };
+                }
+            }
+            
+            // GPS error callback
+            function onCourierGpsError(error) {
+                console.warn('🛵 [Courier GPS] Error:', error.code, error.message);
+                
+                // If permission denied, send inactive status
+                if (error.code === error.PERMISSION_DENIED) {
+                    console.log('🛵 [Courier GPS] Permission denied - sending inactive status');
+                    if (courierLastLocation) {
+                        sendCourierLocation(courierLastLocation.lat, courierLastLocation.lng, null, false);
+                    }
+                }
+            }
+            
+            // Send location to server
+            function sendCourierLocation(lat, lng, accuracy, isActive = true) {
+                fetch(GPS_UPDATE_ROUTE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': CSRF_TOKEN
+                    },
+                    body: JSON.stringify({
+                        latitude: lat,
+                        longitude: lng,
+                        is_gps_active: isActive,
+                        accuracy: accuracy
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('🛵 [Courier GPS] Location sent successfully');
+                    }
+                })
+                .catch(err => {
+                    console.error('🛵 [Courier GPS] Server error:', err);
+                });
+            }
+            
+            // Calculate distance between two points (meters)
+            function calculateCourierDistance(lat1, lng1, lat2, lng2) {
+                const R = 6371000;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLng = (lng2 - lng1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLng/2) * Math.sin(dLng/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+            
+            // Auto-start GPS when page loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', startCourierGpsTracking);
+            } else {
+                startCourierGpsTracking();
+            }
+            
+            // Keep GPS active - restart if needed every 30 seconds
+            setInterval(() => {
+                if (courierGpsWatchId === null) {
+                    console.log('🛵 [Courier GPS] Restarting tracking...');
+                    startCourierGpsTracking();
+                }
+            }, 30000);
+            
+            // Send inactive status when page unloads
+            window.addEventListener('beforeunload', function() {
+                if (courierGpsWatchId !== null) {
+                    navigator.geolocation.clearWatch(courierGpsWatchId);
+                }
+                // Note: This may not always work due to browser limitations
+                if (courierLastLocation) {
+                    // Use sendBeacon for reliable unload
+                    const data = JSON.stringify({
+                        latitude: courierLastLocation.lat,
+                        longitude: courierLastLocation.lng,
+                        is_gps_active: false
+                    });
+                    navigator.sendBeacon(GPS_UPDATE_ROUTE + '?_token=' + CSRF_TOKEN, data);
+                }
+            });
+        })();
+    </script>
+    @endif
+    @endauth
+    
     @yield('scripts')
 </body>
 </html>
