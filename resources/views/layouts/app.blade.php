@@ -591,18 +591,22 @@
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
+                z-index: 150;
             }
 
             .sidebar.open {
                 transform: translateX(0);
+                z-index: 150;
             }
 
             .mobile-menu-toggle {
                 display: flex;
+                z-index: 200;
             }
 
             .sidebar-overlay.active {
                 display: block;
+                z-index: 140;
             }
 
             .header {
@@ -786,9 +790,14 @@
                 font-size: 0.75rem;
             }
 
-            /* Map container smaller on mobile */
+            /* Map container taller on mobile for better usability */
             .map-container {
-                height: 280px !important;
+                height: 55vh !important;
+                min-height: 300px !important;
+            }
+
+            #map {
+                height: 100% !important;
             }
 
             /* Card header wrap on mobile */

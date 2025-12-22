@@ -126,8 +126,8 @@
                        autocomplete="off">
                 <div id="search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 4px; max-height: 300px; overflow-y: auto; z-index: 1000;"></div>
             </div>
-            <button onclick="toggleMapFullscreen()" class="btn btn-primary hide-mobile" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; white-space: nowrap;" id="fullscreen-btn">
-                ⛶ Fullscreen
+            <button onclick="toggleMapFullscreen()" class="btn btn-primary" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; white-space: nowrap;" id="fullscreen-btn">
+                ⛶ Full
             </button>
         </div>
     </div>
