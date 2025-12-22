@@ -209,6 +209,120 @@
 
 </div>
 
+<!-- My Deliveries Section - Courier Only -->
+@if(auth()->user()->role === 'courier')
+<div class="card" style="margin-top: 1rem;">
+    <div class="card-header">
+        <h2 class="card-title">🛵 My Deliveries</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span id="courier-gps-status" class="badge badge-warning">⏳ Detecting GPS...</span>
+            <button id="toggle-gps-btn" onclick="toggleCourierGPS()" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+                ▶️ Start GPS
+            </button>
+        </div>
+    </div>
+    
+    <!-- GPS Info -->
+    <div style="padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-glass);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">📍 Current Position:</span>
+            <span id="courier-current-coords" style="font-family: monospace;">
+                @if(auth()->user()->courier && auth()->user()->courier->current_latitude)
+                    {{ auth()->user()->courier->current_latitude }}, {{ auth()->user()->courier->current_longitude }}
+                @else
+                    Not set
+                @endif
+            </span>
+        </div>
+    </div>
+
+    <!-- Assigned Deliveries -->
+    <div style="padding: 1rem;">
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">📦 Assigned Deliveries</h4>
+        @if(isset($assignedOrders) && $assignedOrders->count() > 0)
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($assignedOrders as $order)
+                    <tr>
+                        <td>{{ $order->order_number }}</td>
+                        <td>
+                            @foreach($order->items as $item)
+                                {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
+                            @endforeach
+                        </td>
+                        <td>${{ number_format($order->total_amount, 2) }}</td>
+                        <td>
+                            <span class="badge badge-info">{{ ucfirst($order->status) }}</span>
+                        </td>
+                        <td>
+                            <form action="{{ route('courier.orders.status', $order) }}" method="POST" style="display: inline-flex; gap: 0.5rem;">
+                                @csrf
+                                @method('PATCH')
+                                <select name="status" class="form-control" style="width: auto; padding: 0.4rem; font-size: 0.85rem;">
+                                    <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
+                                    <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                                    <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="color: rgba(255,255,255,0.5);">No assigned deliveries.</p>
+        @endif
+    </div>
+
+    <!-- Available Deliveries -->
+    <div style="padding: 1rem; border-top: 1px solid var(--border-glass);">
+        <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">📋 Available Deliveries</h4>
+        @if(isset($availableOrders) && $availableOrders->count() > 0)
+            <div style="display: grid; gap: 0.75rem;">
+                @foreach($availableOrders as $order)
+                <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <div style="font-weight: 600;">{{ $order->order_number }}</div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">
+                                @foreach($order->items as $item)
+                                    {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }}){{ !$loop->last ? ', ' : '' }}
+                                @endforeach
+                            </div>
+                            <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;">
+                                From: {{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; color: #22c55e;">${{ number_format($order->total_amount, 2) }}</div>
+                            <form action="{{ route('courier.accept', $order) }}" method="POST" style="margin-top: 0.5rem;">
+                                @csrf
+                                <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
+                                    ✓ Accept
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        @else
+            <p style="color: rgba(255,255,255,0.5);">No available deliveries at the moment.</p>
+        @endif
+    </div>
+</div>
+@endif
+
 <!-- Purchase Modal -->
 @if(auth()->user()->role === 'factory' || auth()->user()->role === 'distributor')
 <div id="purchase-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
@@ -1156,6 +1270,161 @@
             alert('Error deleting entity');
         });
     }
+    @endif
+
+    // ========================================
+    // COURIER GPS TRACKING (Dashboard)
+    // ========================================
+    @if(auth()->user()->role === 'courier')
+    let courierGpsInterval = null;
+    let isCourierGpsTracking = false;
+    let courierSelfMarker = null;
+    
+    // Find the courier's own marker on the map
+    function findCourierSelfMarker() {
+        if (selfEntity && selfEntity.type === 'courier') {
+            const markerKey = `courier-${selfEntity.id}`;
+            courierSelfMarker = allMarkers[markerKey] || null;
+        }
+    }
+    
+    function toggleCourierGPS() {
+        if (isCourierGpsTracking) {
+            stopCourierGPS();
+        } else {
+            startCourierGPS();
+        }
+    }
+
+    function startCourierGPS() {
+        if (!navigator.geolocation) {
+            alert('Geolocation is not supported by this browser.');
+            document.getElementById('courier-gps-status').innerHTML = '❌ Not Supported';
+            document.getElementById('courier-gps-status').classList.remove('badge-warning', 'badge-success');
+            document.getElementById('courier-gps-status').classList.add('badge-danger');
+            return;
+        }
+
+        isCourierGpsTracking = true;
+        document.getElementById('toggle-gps-btn').innerHTML = '⏹️ Stop GPS';
+        document.getElementById('toggle-gps-btn').classList.remove('btn-success');
+        document.getElementById('toggle-gps-btn').classList.add('btn-danger');
+        document.getElementById('courier-gps-status').innerHTML = '🔄 Detecting...';
+        document.getElementById('courier-gps-status').classList.remove('badge-success', 'badge-danger');
+        document.getElementById('courier-gps-status').classList.add('badge-warning');
+
+        // Update immediately
+        updateCourierGPSLocation();
+
+        // Update every 5 seconds
+        courierGpsInterval = setInterval(updateCourierGPSLocation, 5000);
+    }
+
+    function stopCourierGPS() {
+        isCourierGpsTracking = false;
+        if (courierGpsInterval) {
+            clearInterval(courierGpsInterval);
+            courierGpsInterval = null;
+        }
+        document.getElementById('toggle-gps-btn').innerHTML = '▶️ Start GPS';
+        document.getElementById('toggle-gps-btn').classList.remove('btn-danger');
+        document.getElementById('toggle-gps-btn').classList.add('btn-success');
+        document.getElementById('courier-gps-status').innerHTML = '⏸️ Paused';
+        document.getElementById('courier-gps-status').classList.remove('badge-success', 'badge-danger');
+        document.getElementById('courier-gps-status').classList.add('badge-warning');
+    }
+
+    function updateCourierGPSLocation() {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                console.log('📍 Courier GPS:', lat.toFixed(6), lng.toFixed(6));
+
+                // Update status
+                document.getElementById('courier-gps-status').innerHTML = '🟢 GPS Active';
+                document.getElementById('courier-gps-status').classList.remove('badge-warning', 'badge-danger');
+                document.getElementById('courier-gps-status').classList.add('badge-success');
+
+                // Update coordinates display
+                document.getElementById('courier-current-coords').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+
+                // Update marker on map
+                findCourierSelfMarker();
+                if (courierSelfMarker) {
+                    courierSelfMarker.setLatLng([lat, lng]);
+                } else if (selfEntity && selfEntity.type === 'courier') {
+                    // Create new marker if not found
+                    courierSelfMarker = L.marker([lat, lng], { icon: icons.selfCourier })
+                        .addTo(map)
+                        .bindPopup('<strong>' + selfEntity.name + '</strong><br><span style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem;">YOU</span>');
+                    allMarkers[`courier-${selfEntity.id}`] = courierSelfMarker;
+                }
+
+                // Send to server
+                sendCourierLocationToServer(lat, lng, true);
+            },
+            function(error) {
+                console.error('GPS Error:', error.code, error.message);
+                document.getElementById('courier-gps-status').innerHTML = '⚠️ GPS Error';
+                document.getElementById('courier-gps-status').classList.remove('badge-success');
+                document.getElementById('courier-gps-status').classList.add('badge-warning');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    }
+
+    function sendCourierLocationToServer(lat, lng, isGpsActive) {
+        fetch('{{ route("courier.location") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ 
+                latitude: lat, 
+                longitude: lng,
+                is_gps_active: isGpsActive
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                console.log('📤 Location sent to server');
+            }
+        })
+        .catch(err => {
+            console.error('Server Error:', err);
+        });
+    }
+
+    // Auto-start GPS on page load for courier
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🛵 Courier Dashboard GPS - Initializing...');
+        
+        // Check for GPS support and auto-start
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    console.log('✅ GPS Permission granted');
+                    startCourierGPS();
+                },
+                function(error) {
+                    console.warn('⚠️ GPS Error on init:', error.message);
+                    document.getElementById('courier-gps-status').innerHTML = '⚠️ Click Start GPS';
+                    document.getElementById('courier-gps-status').classList.add('badge-warning');
+                }
+            );
+        } else {
+            document.getElementById('courier-gps-status').innerHTML = '❌ GPS Not Supported';
+            document.getElementById('courier-gps-status').classList.add('badge-danger');
+        }
+    });
     @endif
 </script>
 @endsection

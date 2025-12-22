@@ -133,7 +133,23 @@ class DashboardController extends Controller
                 ->sortBy('distance');
         }
 
-        return view('dashboard', compact('suppliers', 'factories', 'distributors', 'couriers', 'selfEntity', 'myProducts', 'myOrders', 'marketplace'));
+        // Get courier delivery data (for courier My Deliveries section)
+        $assignedOrders = collect();
+        $availableOrders = collect();
+        if ($user->role === 'courier' && $user->courier) {
+            $assignedOrders = \App\Models\Order::where('courier_id', $user->courier->id)
+                ->whereIn('status', ['confirmed', 'processing', 'shipped'])
+                ->with('items.product')
+                ->get();
+            
+            $availableOrders = \App\Models\Order::whereNull('courier_id')
+                ->whereIn('status', ['pickup', 'confirmed'])
+                ->with(['items.product', 'sellerSupplier', 'sellerFactory'])
+                ->take(10)
+                ->get();
+        }
+
+        return view('dashboard', compact('suppliers', 'factories', 'distributors', 'couriers', 'selfEntity', 'myProducts', 'myOrders', 'marketplace', 'assignedOrders', 'availableOrders'));
     }
 
     // Haversine distance calculation (returns km)
