@@ -2,6 +2,7 @@
     "version": 2,
     "installCommand": "echo 'Skip composer - vendor committed'",
     "buildCommand": "echo 'Skip npm - assets pre-built'",
+    "outputDirectory": "public",
     "functions": {
         "api/index.php": {
             "runtime": "vercel-php@0.6.2"
