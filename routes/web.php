@@ -16,6 +16,21 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// Debug route - TEMPORARY for Vercel troubleshooting
+Route::get('/debug-db', function () {
+    return response()->json([
+        'couriers_count' => \App\Models\Courier::count(),
+        'users_courier_role' => \App\Models\User::where('role', 'courier')->count(),
+        'suppliers_count' => \App\Models\Supplier::count(),
+        'factories_count' => \App\Models\Factory::count(),
+        'distributors_count' => \App\Models\Distributor::count(),
+        'sample_couriers' => \App\Models\Courier::take(3)->get(['id', 'name', 'user_id']),
+        'sample_users_courier' => \App\Models\User::where('role', 'courier')->take(3)->get(['id', 'name', 'email', 'role']),
+        'db_connection' => config('database.default'),
+        'db_host' => config('database.connections.mysql.host'),
+    ]);
+});
+
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
