@@ -16,45 +16,6 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Debug route - TEMPORARY for Vercel troubleshooting
-Route::get('/debug-db', function () {
-    return response()->json([
-        'couriers_count' => \App\Models\Courier::count(),
-        'users_courier_role' => \App\Models\User::where('role', 'courier')->count(),
-        'suppliers_count' => \App\Models\Supplier::count(),
-        'factories_count' => \App\Models\Factory::count(),
-        'distributors_count' => \App\Models\Distributor::count(),
-        'sample_couriers' => \App\Models\Courier::take(3)->get(['id', 'name', 'user_id']),
-        'sample_users_courier' => \App\Models\User::where('role', 'courier')->take(3)->get(['id', 'name', 'email', 'role']),
-        'db_connection' => config('database.default'),
-        'db_host' => config('database.connections.mysql.host'),
-    ]);
-});
-
-// Fix orphan courier users - creates Courier profiles for users with role courier but no profile
-Route::get('/fix-couriers', function () {
-    $fixed = 0;
-    $users = \App\Models\User::where('role', 'courier')->get();
-    
-    foreach ($users as $user) {
-        $exists = \App\Models\Courier::where('user_id', $user->id)->exists();
-        if (!$exists) {
-            \App\Models\Courier::create([
-                'user_id' => $user->id,
-                'name' => $user->name,
-                'status' => 'idle',
-            ]);
-            $fixed++;
-        }
-    }
-    
-    return response()->json([
-        'message' => "Fixed $fixed courier(s)",
-        'total_users_courier' => $users->count(),
-        'couriers_now' => \App\Models\Courier::count(),
-    ]);
-});
-
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);

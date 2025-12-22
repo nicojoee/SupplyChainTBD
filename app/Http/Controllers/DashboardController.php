@@ -239,17 +239,14 @@ class DashboardController extends Controller
             ];
         }
 
-        // Show couriers - only those with saved position
-        // Couriers without position (never tracked) won't appear on map
+        // Show ALL couriers on map - even those without GPS
+        // Couriers without position will use default Surabaya location with indicator
         $couriers = Courier::all();
         foreach ($couriers as $courier) {
-            // Skip couriers without position
-            if ($courier->current_latitude === null || $courier->current_longitude === null) {
-                continue;
-            }
-            
-            $lat = (float) $courier->current_latitude;
-            $lng = (float) $courier->current_longitude;
+            // Use actual GPS if available, otherwise use default Surabaya center
+            $hasGps = ($courier->current_latitude !== null && $courier->current_longitude !== null);
+            $lat = $hasGps ? (float) $courier->current_latitude : -7.2575;
+            $lng = $hasGps ? (float) $courier->current_longitude : 112.7521;
             $isGpsActive = (bool) $courier->is_gps_active;
             
             // Calculate time since last update
@@ -269,6 +266,7 @@ class DashboardController extends Controller
                     'phone' => $courier->phone,
                     'status' => $courier->status,
                     'is_gps_active' => $isGpsActive,
+                    'has_gps' => $hasGps,
                     'last_seen' => $lastSeen,
                 ],
                 'geometry' => [
