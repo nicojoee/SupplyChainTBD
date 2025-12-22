@@ -309,7 +309,10 @@ class SuperAdminController extends Controller
             $user->delete();
         }
 
-        return response()->json(['success' => true, 'message' => 'Supplier deleted']);
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Supplier deleted']);
+        }
+        return redirect()->route('superadmin.suppliers')->with('success', 'Supplier deleted successfully!');
     }
 
     public function deleteFactoryAjax(Factory $factory)
@@ -321,7 +324,10 @@ class SuperAdminController extends Controller
             $user->delete();
         }
 
-        return response()->json(['success' => true, 'message' => 'Factory deleted']);
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Factory deleted']);
+        }
+        return redirect()->route('superadmin.factories')->with('success', 'Factory deleted successfully!');
     }
 
     public function deleteDistributorAjax(Distributor $distributor)
@@ -333,6 +339,9 @@ class SuperAdminController extends Controller
             $user->delete();
         }
 
-        return response()->json(['success' => true, 'message' => 'Distributor deleted']);
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Distributor deleted']);
+        }
+        return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
     }
 }
