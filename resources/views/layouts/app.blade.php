@@ -569,6 +569,11 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .mobile-menu-toggle.open {
+            transform: translateX(280px);
         }
 
         .sidebar-overlay {
@@ -1019,7 +1024,7 @@
                         Manage Distributors
                     </a>
                     <a href="{{ route('superadmin.couriers') }}" class="nav-link {{ request()->routeIs('superadmin.couriers*') || request()->routeIs('superadmin.add.courier') ? 'active' : '' }}">
-                        <span class="nav-icon">�</span>
+                        <span class="nav-icon">🚚</span>
                         Manage Couriers
                     </a>
                 </div>
@@ -1255,15 +1260,19 @@
         function toggleMobileMenu() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
             sidebar.classList.toggle('open');
             overlay.classList.toggle('active');
+            toggleBtn.classList.toggle('open');
         }
 
         function closeMobileMenu() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
             sidebar.classList.remove('open');
             overlay.classList.remove('active');
+            toggleBtn.classList.remove('open');
         }
 
         // Close menu when clicking a nav link on mobile
