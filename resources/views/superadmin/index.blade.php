@@ -68,11 +68,12 @@
             <h2 class="card-title">Recent Users</h2>
             <a href="{{ route('superadmin.users') }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">View All</a>
         </div>
+        <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th class="hide-mobile">Email</th>
                     <th>Role</th>
                 </tr>
             </thead>
@@ -80,7 +81,7 @@
                 @foreach($users as $user)
                 <tr>
                     <td>{{ $user->name }}</td>
-                    <td>{{ $user->email }}</td>
+                    <td class="hide-mobile">{{ $user->email }}</td>
                     <td>
                         <span class="badge badge-info">{{ ucfirst($user->role) }}</span>
                     </td>
@@ -88,23 +89,24 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
         
         <!-- Pagination Controls -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
-            <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
-                Showing {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} of {{ $users->total() }} users
+        <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">
+                {{ $users->firstItem() ?? 0 }}-{{ $users->lastItem() ?? 0 }} of {{ $users->total() }}
             </div>
             <div style="display: flex; gap: 0.5rem;">
                 @if($users->onFirstPage())
-                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">← Previous 10</span>
+                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">← Prev</span>
                 @else
-                    <a href="{{ $users->previousPageUrl() }}" class="btn" style="background: rgba(255,255,255,0.1);">← Previous 10</a>
+                    <a href="{{ $users->previousPageUrl() }}" class="btn" style="background: rgba(255,255,255,0.1);">← Prev</a>
                 @endif
                 
                 @if($users->hasMorePages())
-                    <a href="{{ $users->nextPageUrl() }}" class="btn btn-primary">Next 10 →</a>
+                    <a href="{{ $users->nextPageUrl() }}" class="btn btn-primary">Next →</a>
                 @else
-                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">Next 10 →</span>
+                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">Next →</span>
                 @endif
             </div>
         </div>
@@ -115,6 +117,7 @@
             <h2 class="card-title">Recent Orders</h2>
         </div>
         @if($recentOrders->count() > 0)
+        <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
@@ -137,17 +140,18 @@
                 @endforeach
         </tbody>
         </table>
+        </div>
         
         <!-- Pagination Controls -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
-            <div style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">
-                Showing {{ $recentOrders->firstItem() ?? 0 }} - {{ $recentOrders->lastItem() ?? 0 }} of {{ $recentOrders->total() }} orders
+        <div class="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">
+                {{ $recentOrders->firstItem() ?? 0 }}-{{ $recentOrders->lastItem() ?? 0 }} of {{ $recentOrders->total() }}
             </div>
             <div style="display: flex; gap: 0.5rem;">
                 @if($recentOrders->onFirstPage())
-                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">← Previous</span>
+                    <span class="btn" style="background: rgba(255,255,255,0.05); opacity: 0.5; cursor: not-allowed;">← Prev</span>
                 @else
-                    <a href="{{ $recentOrders->previousPageUrl() }}" class="btn" style="background: rgba(255,255,255,0.1);">← Previous</a>
+                    <a href="{{ $recentOrders->previousPageUrl() }}" class="btn" style="background: rgba(255,255,255,0.1);">← Prev</a>
                 @endif
                 
                 @if($recentOrders->hasMorePages())

@@ -113,19 +113,20 @@
 </div>
 
 <div class="card" id="map-card">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
         <h2 class="card-title">Supply Chain Map</h2>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div class="flex-wrap-mobile" style="display: flex; gap: 0.5rem; align-items: center; flex: 1; min-width: 200px;">
             <!-- Search Box -->
-            <div style="position: relative;">
+            <div style="position: relative; flex: 1; min-width: 180px;">
                 <input type="text" 
                        id="map-search" 
-                       placeholder="🔍 Search supplier, factory, distributor, courier..." 
-                       style="width: 320px; padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.85rem;"
+                       class="mobile-full-width"
+                       placeholder="🔍 Search..." 
+                       style="width: 100%; max-width: 320px; padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 0.85rem;"
                        autocomplete="off">
                 <div id="search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #1e1b4b; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; margin-top: 4px; max-height: 300px; overflow-y: auto; z-index: 1000;"></div>
             </div>
-            <button onclick="toggleMapFullscreen()" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;" id="fullscreen-btn">
+            <button onclick="toggleMapFullscreen()" class="btn btn-primary hide-mobile" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; white-space: nowrap;" id="fullscreen-btn">
                 ⛶ Fullscreen
             </button>
         </div>
@@ -212,9 +213,9 @@
 <!-- My Deliveries Section - Courier Only -->
 @if(auth()->user()->role === 'courier')
 <div class="card" style="margin-top: 1rem;">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap: wrap; gap: 0.5rem;">
         <h2 class="card-title">🛵 My Deliveries</h2>
-        <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <div class="flex-wrap-mobile" style="display: flex; gap: 0.5rem; align-items: center;">
             <span id="courier-gps-status" class="badge badge-warning">⏳ Detecting GPS...</span>
             <button id="toggle-gps-btn" onclick="toggleCourierGPS()" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
                 ▶️ Start GPS
@@ -223,28 +224,28 @@
     </div>
     
     <!-- GPS Info with Accuracy -->
-    <div style="padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-glass);">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; text-align: center;">
+    <div style="padding: 0.75rem; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-glass);">
+        <div class="grid-info-mobile" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; text-align: center;">
             <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
-                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">LATITUDE</div>
-                <div id="courier-lat" style="font-family: monospace; font-weight: 600;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.65rem;">LAT</div>
+                <div id="courier-lat" style="font-family: monospace; font-weight: 600; font-size: 0.8rem;">
                     {{ auth()->user()->courier && auth()->user()->courier->current_latitude ? number_format(auth()->user()->courier->current_latitude, 6) : '-' }}
                 </div>
             </div>
             <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
-                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">LONGITUDE</div>
-                <div id="courier-lng" style="font-family: monospace; font-weight: 600;">
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.65rem;">LNG</div>
+                <div id="courier-lng" style="font-family: monospace; font-weight: 600; font-size: 0.8rem;">
                     {{ auth()->user()->courier && auth()->user()->courier->current_longitude ? number_format(auth()->user()->courier->current_longitude, 6) : '-' }}
                 </div>
             </div>
             <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
-                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">AKURASI</div>
-                <div id="courier-accuracy" style="font-weight: 600;">-</div>
-                <div id="courier-accuracy-label" style="font-size: 0.65rem;"></div>
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.65rem;">AKURASI</div>
+                <div id="courier-accuracy" style="font-weight: 600; font-size: 0.8rem;">-</div>
+                <div id="courier-accuracy-label" style="font-size: 0.6rem;"></div>
             </div>
             <div style="background: rgba(255,255,255,0.02); padding: 0.5rem; border-radius: 8px;">
-                <div style="color: rgba(255,255,255,0.5); font-size: 0.7rem;">UPDATE</div>
-                <div id="courier-last-update" style="font-size: 0.9rem;">-</div>
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.65rem;">UPDATE</div>
+                <div id="courier-last-update" style="font-size: 0.8rem;">-</div>
             </div>
         </div>
     </div>

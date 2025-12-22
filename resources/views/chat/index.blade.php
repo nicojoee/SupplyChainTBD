@@ -5,7 +5,7 @@
 @section('content')
 <div class="chat-container" style="display: flex; height: calc(100vh - 120px); gap: 1rem;">
     <!-- Left Sidebar - Conversations -->
-    <div class="chat-sidebar" style="width: 320px; background: var(--bg-glass); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+    <div class="chat-sidebar" style="width: 320px; min-width: 280px; background: var(--bg-glass); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
         <div style="padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
             <h3 style="margin: 0 0 0.75rem 0;">💬 Messages</h3>
             <div style="display: flex; gap: 0.5rem;">
