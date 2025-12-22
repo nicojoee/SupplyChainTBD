@@ -1,6 +1,7 @@
 {
     "version": 2,
     "installCommand": "echo 'Skipping composer install - vendor is committed'",
+    "buildCommand": "echo 'Skipping npm build - assets are pre-built'",
     "functions": {
         "api/index.php": {
             "runtime": "vercel-php@0.6.2"
