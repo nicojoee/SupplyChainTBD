@@ -31,6 +31,30 @@ Route::get('/debug-db', function () {
     ]);
 });
 
+// Fix orphan courier users - creates Courier profiles for users with role courier but no profile
+Route::get('/fix-couriers', function () {
+    $fixed = 0;
+    $users = \App\Models\User::where('role', 'courier')->get();
+    
+    foreach ($users as $user) {
+        $exists = \App\Models\Courier::where('user_id', $user->id)->exists();
+        if (!$exists) {
+            \App\Models\Courier::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'status' => 'available',
+            ]);
+            $fixed++;
+        }
+    }
+    
+    return response()->json([
+        'message' => "Fixed $fixed courier(s)",
+        'total_users_courier' => $users->count(),
+        'couriers_now' => \App\Models\Courier::count(),
+    ]);
+});
+
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);

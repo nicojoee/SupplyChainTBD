@@ -176,10 +176,17 @@ class SuperAdminController extends Controller
             'email' => 'required|email|unique:users,email',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => explode('@', $request->email)[0],
             'email' => $request->email,
             'role' => 'courier',
+        ]);
+
+        // Also create Courier profile so they appear in management page and map
+        Courier::create([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'status' => 'available',
         ]);
 
         return redirect()->route('superadmin.couriers')->with('success', 'Courier account created! They can now login with Google.');
