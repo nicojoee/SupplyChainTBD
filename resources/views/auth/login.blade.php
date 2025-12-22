@@ -273,7 +273,7 @@
                     Factory Operations
                 </div>
                 <div class="feature">
-                    <span class="feature-icon">🚚</span>
+                    <span class="feature-icon">🏪</span>
                     Distribution Network
                 </div>
             </div>

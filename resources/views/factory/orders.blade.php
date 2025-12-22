@@ -88,7 +88,7 @@
                                     @csrf
                                     <button type="submit" class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: #f59e0b;" 
                                             onclick="return confirm('Request nearest courier for this order?')">
-                                        🛵 Call Courier
+                                        🚚 Call Courier
                                     </button>
                                 </form>
                             @elseif($order->courier_id)

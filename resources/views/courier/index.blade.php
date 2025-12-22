@@ -5,7 +5,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">🛵 My Courier Profile</h2>
+        <h2 class="card-title">🚚 My Courier Profile</h2>
         <a href="{{ route('dashboard') }}" class="btn btn-info" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
             🗺️ Open Map
         </a>

@@ -366,7 +366,7 @@
 
     <div class="card">
         <div class="card-header">
-            <h2 class="card-title">🛵 Courier Status</h2>
+            <h2 class="card-title">🚚 Courier Status</h2>
         </div>
         <div id="couriers-list">
             @include('partials.couriers-list', ['couriers' => $couriers])
@@ -848,7 +848,7 @@
                         : '<span style="background: #6b7280; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">⏸️ GPS Tidak Aktif</span>';
                     popupContent += `<div style="margin: 8px 0;">${gpsStatus}</div>`;
                     if (props.vehicle) {
-                        popupContent += `<div class="popup-info">🛵 ${props.vehicle}</div>`;
+                        popupContent += `<div class="popup-info">🚚 ${props.vehicle}</div>`;
                     }
                     if (props.license_plate) {
                         popupContent += `<div class="popup-info">🔢 ${props.license_plate}</div>`;
@@ -1099,7 +1099,7 @@
                     </a>
                     <a href="{{ route('superadmin.add.distributor') }}?lat=${lat}&lng=${lng}" 
                        style="background: #6366f1; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        🚚 Add Distributor
+                        🏪 Add Distributor
                     </a>
                 </div>
             </div>
@@ -1204,7 +1204,7 @@
                             <div class="popup-title">${props.name}</div>
                             <span class="popup-type courier">courier</span>
                             <div style="margin: 8px 0;">${gpsStatus}</div>
-                            <div class="popup-info">🛵 ${props.vehicle || 'Vehicle N/A'}</div>
+                            <div class="popup-info">🚚 ${props.vehicle || 'Vehicle N/A'}</div>
                             <div class="popup-info">📞 ${props.phone || 'N/A'}</div>
                             <div class="popup-info">Status: <strong>${props.status}</strong></div>
                             ${lastSeenInfo}

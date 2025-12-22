@@ -5,7 +5,7 @@
 @section('content')
 <div class="card" style="max-width: 500px; margin: 0 auto;">
     <div class="card-header">
-        <h2 class="card-title">🛵 Add Courier Account</h2>
+        <h2 class="card-title">🚚 Add Courier Account</h2>
     </div>
     <p style="color: rgba(255,255,255,0.6); margin-bottom: 1.5rem;">
         Create a courier account. The user will fill in their vehicle details when they first login.

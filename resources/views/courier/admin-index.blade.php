@@ -5,7 +5,7 @@
 @section('content')
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon courier">🛵</div>
+        <div class="stat-icon courier">🚚</div>
         <div>
             <div class="stat-value">{{ $couriers->count() }}</div>
             <div class="stat-label">Total Couriers</div>
@@ -37,7 +37,7 @@
 <!-- Courier Status Overview -->
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">🛵 Courier Status</h2>
+        <h2 class="card-title">🚚 Courier Status</h2>
         <a href="{{ route('superadmin.couriers') }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Manage Couriers</a>
     </div>
     @if($couriers->count() > 0)
