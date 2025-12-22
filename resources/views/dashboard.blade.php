@@ -166,7 +166,8 @@
     </div>
     <div class="map-container" style="position: relative;">
         <div id="map"></div>
-        <!-- Auto-Locate Button - Bottom Right -->
+        <!-- Auto-Locate Button - Bottom Right (Courier Only) -->
+        @if(auth()->user()->role === 'courier')
         <button id="auto-locate-btn" onclick="autoLocateMe()" 
                 style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; 
                        width: 48px; height: 48px; border-radius: 50%; 
@@ -177,6 +178,7 @@
                 title="Locate Me">
             📍
         </button>
+        @endif
     </div>
 </div>
 
