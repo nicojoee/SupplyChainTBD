@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="card" style="max-width: 600px; margin: 0 auto; text-align: center;">
-    <div style="font-size: 4rem; margin-bottom: 1rem;">🚚</div>
+    <div style="font-size: 4rem; margin-bottom: 1rem;">🏪</div>
     <h2 style="color: #fff; margin-bottom: 1rem;">Distributor Profile Not Found</h2>
     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">
         Your distributor profile has not been set up yet. Please contact the <strong style="color: #6366f1;">Superadmin</strong> to create your distributor account with the correct location on the map.

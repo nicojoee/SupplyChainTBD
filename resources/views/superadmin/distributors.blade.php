@@ -5,7 +5,7 @@
 @section('content')
 <div class="card">
     <div class="card-header">
-        <h2 class="card-title">🚚 Distributor Management</h2>
+        <h2 class="card-title">🏪 Distributor Management</h2>
         <a href="{{ route('superadmin.add.distributor') }}" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">+ Add Distributor</a>
     </div>
 

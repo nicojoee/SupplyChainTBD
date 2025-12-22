@@ -578,8 +578,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 90;
+            background: rgba(0,0,0,0.6);
+            z-index: 9998;
         }
 
         /* Responsive Styles */
@@ -591,22 +591,23 @@
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
-                z-index: 150;
+                z-index: 9999;
+                display: flex;
             }
 
             .sidebar.open {
                 transform: translateX(0);
-                z-index: 150;
+                z-index: 9999;
             }
 
             .mobile-menu-toggle {
                 display: flex;
-                z-index: 200;
+                z-index: 10000;
             }
 
             .sidebar-overlay.active {
                 display: block;
-                z-index: 140;
+                z-index: 9998;
             }
 
             .header {
@@ -1014,11 +1015,11 @@
                         Manage Factories
                     </a>
                     <a href="{{ route('superadmin.distributors') }}" class="nav-link {{ request()->routeIs('superadmin.distributors*') || request()->routeIs('superadmin.add.distributor') ? 'active' : '' }}">
-                        <span class="nav-icon">🚚</span>
+                        <span class="nav-icon">🏪</span>
                         Manage Distributors
                     </a>
                     <a href="{{ route('superadmin.couriers') }}" class="nav-link {{ request()->routeIs('superadmin.couriers*') || request()->routeIs('superadmin.add.courier') ? 'active' : '' }}">
-                        <span class="nav-icon">🛵</span>
+                        <span class="nav-icon">�</span>
                         Manage Couriers
                     </a>
                 </div>
@@ -1082,7 +1083,7 @@
                 <div class="nav-section">
                     <div class="nav-section-title">Courier</div>
                     <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.*') ? 'active' : '' }}">
-                        <span class="nav-icon">🛵</span>
+                        <span class="nav-icon">�</span>
                         My Deliveries
                     </a>
                 </div>

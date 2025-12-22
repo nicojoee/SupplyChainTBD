@@ -26,14 +26,14 @@
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon distributor">🚚</div>
+        <div class="stat-icon distributor">🏪</div>
         <div>
             <div class="stat-value">{{ $stats['distributors'] }}</div>
             <div class="stat-label">Distributors</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon courier">🛵</div>
+        <div class="stat-icon courier">🚚</div>
         <div>
             <div class="stat-value">{{ $stats['couriers'] }}</div>
             <div class="stat-label">Couriers</div>

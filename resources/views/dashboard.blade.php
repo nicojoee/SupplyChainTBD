@@ -130,14 +130,14 @@
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon distributor">🚚</div>
+        <div class="stat-icon distributor">🏪</div>
         <div>
             <div class="stat-value">{{ $distributors->count() }}</div>
             <div class="stat-label">Distributors</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon courier">🛵</div>
+        <div class="stat-icon courier">🚚</div>
         <div>
             <div class="stat-value">{{ $couriers->count() }}</div>
             <div class="stat-label">Couriers</div>
@@ -180,85 +180,11 @@
     </div>
 </div>
 
-<div class="grid-2">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">📦 Suppliers & Products</h2>
-        </div>
-        <div id="suppliers-list">
-            @include('partials.suppliers-list', ['suppliers' => $suppliers])
-        </div>
-        @if($suppliers->total() > 3)
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
-            <span id="suppliers-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $suppliers->firstItem() }}-{{ $suppliers->lastItem() }} of {{ $suppliers->total() }}</span>
-            <div style="display: flex; gap: 0.25rem;">
-                <button onclick="loadPage('suppliers', 'prev')" id="suppliers-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $suppliers->onFirstPage() ? 'disabled' : '' }}>←</button>
-                <button onclick="loadPage('suppliers', 'next')" id="suppliers-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$suppliers->hasMorePages() ? 'disabled' : '' }}>→</button>
-            </div>
-        </div>
-        @endif
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">🏭 Factories & Products</h2>
-        </div>
-        <div id="factories-list">
-            @include('partials.factories-list', ['factories' => $factories])
-        </div>
-        @if($factories->total() > 3)
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
-            <span id="factories-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $factories->firstItem() }}-{{ $factories->lastItem() }} of {{ $factories->total() }}</span>
-            <div style="display: flex; gap: 0.25rem;">
-                <button onclick="loadPage('factories', 'prev')" id="factories-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $factories->onFirstPage() ? 'disabled' : '' }}>←</button>
-                <button onclick="loadPage('factories', 'next')" id="factories-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$factories->hasMorePages() ? 'disabled' : '' }}>→</button>
-            </div>
-        </div>
-        @endif
-    </div>
-</div>
-
-<div class="grid-2">
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">🚚 Distributor Stock</h2>
-        </div>
-        <div id="distributors-list">
-            @include('partials.distributors-list', ['distributors' => $distributors])
-        </div>
-        @if($distributors->total() > 3)
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
-            <span id="distributors-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $distributors->firstItem() }}-{{ $distributors->lastItem() }} of {{ $distributors->total() }}</span>
-            <div style="display: flex; gap: 0.25rem;">
-                <button onclick="loadPage('distributors', 'prev')" id="distributors-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $distributors->onFirstPage() ? 'disabled' : '' }}>←</button>
-                <button onclick="loadPage('distributors', 'next')" id="distributors-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$distributors->hasMorePages() ? 'disabled' : '' }}>→</button>
-            </div>
-        </div>
-        @endif
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">🛵 Courier Status</h2>
-        </div>
-        <div id="couriers-list">
-            @include('partials.couriers-list', ['couriers' => $couriers])
-        </div>
-        @if($couriers->total() > 3)
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
-            <span id="couriers-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $couriers->firstItem() }}-{{ $couriers->lastItem() }} of {{ $couriers->total() }}</span>
-            <div style="display: flex; gap: 0.25rem;">
-                <button onclick="loadPage('couriers', 'prev')" id="couriers-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $couriers->onFirstPage() ? 'disabled' : '' }}>←</button>
-        @endif
-    </div>
-
-</div>
-
 <!-- My Deliveries Section - Courier Only -->
 @if(auth()->user()->role === 'courier')
 <div class="card" style="margin-top: 1rem;">
     <div class="card-header" style="flex-wrap: wrap; gap: 0.5rem;">
-        <h2 class="card-title">🛵 My Deliveries</h2>
+        <h2 class="card-title">🚚 My Deliveries</h2>
         <div class="flex-wrap-mobile" style="display: flex; gap: 0.5rem; align-items: center;">
             <span id="courier-gps-status" class="badge badge-warning">⏳ Detecting GPS...</span>
             <button id="toggle-gps-btn" onclick="toggleCourierGPS()" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
@@ -380,6 +306,82 @@
     </div>
 </div>
 @endif
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">📦 Suppliers & Products</h2>
+        </div>
+        <div id="suppliers-list">
+            @include('partials.suppliers-list', ['suppliers' => $suppliers])
+        </div>
+        @if($suppliers->total() > 3)
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
+            <span id="suppliers-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $suppliers->firstItem() }}-{{ $suppliers->lastItem() }} of {{ $suppliers->total() }}</span>
+            <div style="display: flex; gap: 0.25rem;">
+                <button onclick="loadPage('suppliers', 'prev')" id="suppliers-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $suppliers->onFirstPage() ? 'disabled' : '' }}>←</button>
+                <button onclick="loadPage('suppliers', 'next')" id="suppliers-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$suppliers->hasMorePages() ? 'disabled' : '' }}>→</button>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🏭 Factories & Products</h2>
+        </div>
+        <div id="factories-list">
+            @include('partials.factories-list', ['factories' => $factories])
+        </div>
+        @if($factories->total() > 3)
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
+            <span id="factories-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $factories->firstItem() }}-{{ $factories->lastItem() }} of {{ $factories->total() }}</span>
+            <div style="display: flex; gap: 0.25rem;">
+                <button onclick="loadPage('factories', 'prev')" id="factories-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $factories->onFirstPage() ? 'disabled' : '' }}>←</button>
+                <button onclick="loadPage('factories', 'next')" id="factories-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$factories->hasMorePages() ? 'disabled' : '' }}>→</button>
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🏪 Distributor Stock</h2>
+        </div>
+        <div id="distributors-list">
+            @include('partials.distributors-list', ['distributors' => $distributors])
+        </div>
+        @if($distributors->total() > 3)
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
+            <span id="distributors-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $distributors->firstItem() }}-{{ $distributors->lastItem() }} of {{ $distributors->total() }}</span>
+            <div style="display: flex; gap: 0.25rem;">
+                <button onclick="loadPage('distributors', 'prev')" id="distributors-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $distributors->onFirstPage() ? 'disabled' : '' }}>←</button>
+                <button onclick="loadPage('distributors', 'next')" id="distributors-next" class="btn btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" {{ !$distributors->hasMorePages() ? 'disabled' : '' }}>→</button>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">🛵 Courier Status</h2>
+        </div>
+        <div id="couriers-list">
+            @include('partials.couriers-list', ['couriers' => $couriers])
+        </div>
+        @if($couriers->total() > 3)
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-glass);">
+            <span id="couriers-info" style="color: rgba(255,255,255,0.4); font-size: 0.8rem;">{{ $couriers->firstItem() }}-{{ $couriers->lastItem() }} of {{ $couriers->total() }}</span>
+            <div style="display: flex; gap: 0.25rem;">
+                <button onclick="loadPage('couriers', 'prev')" id="couriers-prev" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" {{ $couriers->onFirstPage() ? 'disabled' : '' }}>←</button>
+        @endif
+    </div>
+
+</div>
+
+
 
 <!-- Purchase Modal -->
 @if(auth()->user()->role === 'factory' || auth()->user()->role === 'distributor')
@@ -732,25 +734,25 @@
         }),
         distributor: L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background: #6366f1; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🚚</div>',
+            html: '<div style="background: #6366f1; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🏪</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         }),
         courierIdle: L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background: #22c55e; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🛵</div>',
+            html: '<div style="background: #22c55e; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🚚</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         }),
         courierBusy: L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🛵</div>',
+            html: '<div style="background: #ef4444; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">🚚</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         }),
         courierNoGps: L.divIcon({
             className: 'custom-marker',
-            html: '<div style="background: #6b7280; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px dashed #9ca3af; box-shadow: 0 2px 10px rgba(0,0,0,0.3); opacity: 0.7;">🛵</div>',
+            html: '<div style="background: #6b7280; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px dashed #9ca3af; box-shadow: 0 2px 10px rgba(0,0,0,0.3); opacity: 0.7;">🚚</div>',
             iconSize: [30, 30],
             iconAnchor: [15, 15]
         }),
@@ -769,13 +771,13 @@
         }),
         selfDistributor: L.divIcon({
             className: 'custom-marker self-marker',
-            html: '<div class="self-marker-inner" style="background: linear-gradient(135deg, #6366f1, #4f46e5); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 4px solid #ffffff; box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 4px 15px rgba(0,0,0,0.4); animation: selfPulse 2s infinite;">🚚</div>',
+            html: '<div class="self-marker-inner" style="background: linear-gradient(135deg, #6366f1, #4f46e5); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 4px solid #ffffff; box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 4px 15px rgba(0,0,0,0.4); animation: selfPulse 2s infinite;">🏪</div>',
             iconSize: [45, 45],
             iconAnchor: [22, 22]
         }),
         selfCourier: L.divIcon({
             className: 'custom-marker self-marker',
-            html: '<div class="self-marker-inner" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 4px solid #ffffff; box-shadow: 0 0 20px rgba(14, 165, 233, 0.8), 0 4px 15px rgba(0,0,0,0.4); animation: selfPulse 2s infinite;">🛵</div>',
+            html: '<div class="self-marker-inner" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 4px solid #ffffff; box-shadow: 0 0 20px rgba(14, 165, 233, 0.8), 0 4px 15px rgba(0,0,0,0.4); animation: selfPulse 2s infinite;">🚚</div>',
             iconSize: [45, 45],
             iconAnchor: [22, 22]
         })
