@@ -249,9 +249,11 @@ class ChatController extends Controller
 
             $imagePath = null;
             if ($request->hasFile('image')) {
-                // On Vercel, file upload to local disk won't persist
-                // For now, skip image upload on serverless
-                // $imagePath = $request->file('image')->store('broadcast_images', 'public');
+                // Convert image to Base64 for Vercel serverless (no persistent filesystem)
+                $file = $request->file('image');
+                $imageData = base64_encode(file_get_contents($file->getRealPath()));
+                $mimeType = $file->getMimeType();
+                $imagePath = 'data:' . $mimeType . ';base64,' . $imageData;
             }
 
             $broadcast = BroadcastMessage::create([

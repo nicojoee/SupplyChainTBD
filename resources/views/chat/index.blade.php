@@ -101,7 +101,11 @@
                     </button>
                 </div>
                 @if($broadcast->image_path)
-                    <img src="/storage/{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                    @if(str_starts_with($broadcast->image_path, 'data:'))
+                        <img src="{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                    @else
+                        <img src="/storage/{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                    @endif
                 @endif
                 @if($broadcast->message)
                     <div style="white-space: pre-wrap;">{{ $broadcast->message }}</div>
