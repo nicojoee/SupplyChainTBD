@@ -279,5 +279,11 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Clear dismissed broadcasts when user visits login page (after logout)
+        // This ensures all broadcasts show again when user logs back in
+        localStorage.removeItem('dismissedBroadcasts');
+    </script>
 </body>
 </html>

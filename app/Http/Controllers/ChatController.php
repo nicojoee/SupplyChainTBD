@@ -40,9 +40,11 @@ class ChatController extends Controller
                 ];
             });
 
+        // Auto-delete broadcasts older than 7 days from database
+        BroadcastMessage::where('created_at', '<', now()->subDays(7))->delete();
+        
         // Get broadcasts (only last 7 days)
         $broadcasts = BroadcastMessage::with('sender')
-            ->where('created_at', '>=', now()->subDays(7))
             ->orderBy('created_at', 'asc')  // Oldest first, newest at bottom
             ->get();
 
@@ -106,9 +108,11 @@ class ChatController extends Controller
                 ];
             });
 
-        // Get broadcasts (only last 7 days)
+        // Auto-delete broadcasts older than 7 days
+        BroadcastMessage::where('created_at', '<', now()->subDays(7))->delete();
+        
+        // Get broadcasts
         $broadcasts = BroadcastMessage::with('sender')
-            ->where('created_at', '>=', now()->subDays(7))
             ->orderBy('created_at', 'asc')  // Oldest first, newest at bottom
             ->get();
 
