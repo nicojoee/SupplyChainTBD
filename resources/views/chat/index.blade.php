@@ -101,10 +101,21 @@
                     </button>
                 </div>
                 @if($broadcast->image_path)
-                    @if(str_starts_with($broadcast->image_path, 'data:'))
-                        <img src="{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                    @if($broadcast->file_type === 'pdf')
+                        {{-- PDF Download Button --}}
+                        <a href="{{ $broadcast->image_path }}" 
+                           download="{{ $broadcast->file_name ?? 'document.pdf' }}"
+                           style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 8px; color: #fff; text-decoration: none; margin-bottom: 0.5rem;">
+                            📄 {{ $broadcast->file_name ?? 'Download PDF' }}
+                            <span style="background: #ef4444; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">PDF</span>
+                        </a>
                     @else
-                        <img src="/storage/{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                        {{-- Image Display --}}
+                        @if(str_starts_with($broadcast->image_path, 'data:'))
+                            <img src="{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                        @else
+                            <img src="/storage/{{ $broadcast->image_path }}" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 0.5rem;">
+                        @endif
                     @endif
                 @endif
                 @if($broadcast->message)
@@ -213,8 +224,9 @@
                 <textarea name="message" class="form-control" rows="4" placeholder="Type your broadcast message..."></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Image (optional)</label>
-                <input type="file" name="image" accept="image/*" class="form-control">
+                <label class="form-label">Attachment (Image/PDF, optional)</label>
+                <input type="file" name="attachment" accept="image/*,.pdf,application/pdf" class="form-control">
+                <small style="color: rgba(255,255,255,0.4);">Max 5MB. Images will be compressed to 200KB.</small>
             </div>
             <button type="submit" class="btn" style="width: 100%; background: #f59e0b;">
                 📢 Send Broadcast
@@ -376,21 +388,34 @@ document.getElementById('broadcast-form').addEventListener('submit', async funct
     
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '⏳ Compressing & Sending...';
+    submitBtn.innerHTML = '⏳ Processing...';
     submitBtn.disabled = true;
     
     try {
         const formData = new FormData(this);
-        const imageInput = this.querySelector('input[name="image"]');
+        const attachmentInput = this.querySelector('input[name="attachment"]');
         
-        // Compress image if exists
-        if (imageInput.files && imageInput.files[0]) {
-            const originalFile = imageInput.files[0];
-            if (originalFile.size > 200 * 1024) { // Only compress if > 200KB
-                const compressedFile = await compressImage(originalFile, 200);
-                formData.set('image', compressedFile);
+        // Handle attachment (image or PDF)
+        if (attachmentInput.files && attachmentInput.files[0]) {
+            const file = attachmentInput.files[0];
+            const isImage = file.type.startsWith('image/');
+            const isPDF = file.type === 'application/pdf';
+            
+            if (isImage && file.size > 200 * 1024) {
+                // Compress images over 200KB
+                submitBtn.innerHTML = '⏳ Compressing image...';
+                const compressedFile = await compressImage(file, 200);
+                formData.set('attachment', compressedFile);
+            } else if (isPDF && file.size > 5 * 1024 * 1024) {
+                // PDF too large (max 5MB)
+                alert('❌ PDF file too large. Maximum 5MB allowed.');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                return;
             }
         }
+        
+        submitBtn.innerHTML = '⏳ Sending...';
         
         const response = await fetch('{{ route("chat.broadcast") }}', {
             method: 'POST',

@@ -250,26 +250,40 @@ class ChatController extends Controller
 
             $request->validate([
                 'message' => 'nullable|string|max:5000',
-                'image' => 'nullable|image|max:5120',
+                'attachment' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,pdf|max:5120',
             ]);
 
-            if (!$request->message && !$request->hasFile('image')) {
-                return response()->json(['error' => 'Message or image is required'], 400);
+            if (!$request->message && !$request->hasFile('attachment')) {
+                return response()->json(['error' => 'Message or attachment is required'], 400);
             }
 
-            $imagePath = null;
-            if ($request->hasFile('image')) {
-                // Convert image to Base64 for Vercel serverless (no persistent filesystem)
-                $file = $request->file('image');
-                $imageData = base64_encode(file_get_contents($file->getRealPath()));
+            $filePath = null;
+            $fileName = null;
+            $fileType = null;
+            
+            if ($request->hasFile('attachment')) {
+                $file = $request->file('attachment');
                 $mimeType = $file->getMimeType();
-                $imagePath = 'data:' . $mimeType . ';base64,' . $imageData;
+                $fileName = $file->getClientOriginalName();
+                
+                // Determine file type
+                if (str_starts_with($mimeType, 'image/')) {
+                    $fileType = 'image';
+                } elseif ($mimeType === 'application/pdf') {
+                    $fileType = 'pdf';
+                }
+                
+                // Convert to Base64 for Vercel serverless (no persistent filesystem)
+                $fileData = base64_encode(file_get_contents($file->getRealPath()));
+                $filePath = 'data:' . $mimeType . ';base64,' . $fileData;
             }
 
             $broadcast = BroadcastMessage::create([
                 'sender_id' => $user->id,
                 'message' => $request->message,
-                'image_path' => $imagePath,
+                'image_path' => $filePath,
+                'file_name' => $fileName,
+                'file_type' => $fileType,
             ]);
 
             return response()->json([
@@ -278,6 +292,8 @@ class ChatController extends Controller
                     'id' => $broadcast->id,
                     'message' => $broadcast->message,
                     'image_path' => $broadcast->image_path,
+                    'file_name' => $broadcast->file_name,
+                    'file_type' => $broadcast->file_type,
                     'sender_name' => $user->name,
                     'created_at' => $broadcast->created_at->format('M d, H:i'),
                 ],

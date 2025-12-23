@@ -13,6 +13,8 @@ class BroadcastMessage extends Model
         'sender_id',
         'message',
         'image_path',
+        'file_name',
+        'file_type',
     ];
 
     public function sender()
