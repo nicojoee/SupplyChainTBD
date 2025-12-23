@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [SuperAdminController::class, 'index'])->name('index');
         Route::get('/users', [SuperAdminController::class, 'users'])->name('users');
         Route::patch('/users/{user}/role', [SuperAdminController::class, 'updateUserRole'])->name('users.role');
+        Route::post('/users/{user}/fix-profile', [SuperAdminController::class, 'fixUserProfile'])->name('users.fix-profile');
         
         // Add entity routes (from map click) - fixed location only
         Route::get('/add/supplier', [SuperAdminController::class, 'addSupplierForm'])->name('add.supplier');

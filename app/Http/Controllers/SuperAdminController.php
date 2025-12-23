@@ -129,6 +129,78 @@ class SuperAdminController extends Controller
         return back()->with('success', 'User role updated successfully.');
     }
 
+    // Fix missing entity profile for user
+    public function fixUserProfile(User $user)
+    {
+        $role = $user->role;
+        $entityCreated = false;
+        $entityId = null;
+        $entityType = null;
+
+        // Create entity profile based on role if missing
+        if ($role === 'supplier' && !$user->supplier) {
+            $supplier = Supplier::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+            ]);
+            $entityId = $supplier->id;
+            $entityType = 'supplier';
+            $entityCreated = true;
+        } elseif ($role === 'factory' && !$user->factory) {
+            $factory = Factory::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+                'production_capacity' => 0,
+            ]);
+            $entityId = $factory->id;
+            $entityType = 'factory';
+            $entityCreated = true;
+        } elseif ($role === 'distributor' && !$user->distributor) {
+            $distributor = Distributor::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+                'warehouse_capacity' => 0,
+            ]);
+            $entityId = $distributor->id;
+            $entityType = 'distributor';
+            $entityCreated = true;
+        } elseif ($role === 'courier' && !$user->courier) {
+            Courier::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'status' => 'idle',
+            ]);
+            $entityCreated = true;
+            return back()->with('success', "Courier profile created for {$user->name}!");
+        }
+
+        if (!$entityCreated) {
+            return back()->with('info', 'User already has entity profile or role does not require one.');
+        }
+
+        // For supplier/factory/distributor, redirect to dashboard with setup_location mode
+        if ($entityType && $entityId) {
+            return redirect()->route('dashboard')
+                ->with('setup_location', [
+                    'type' => $entityType,
+                    'id' => $entityId,
+                    'name' => $user->name,
+                ])
+                ->with('success', "Profile created for {$user->name}! Please click on the map to set their location.");
+        }
+
+        return back()->with('success', "Profile created for {$user->name}!");
+    }
+
     // Add Supplier Form
     public function addSupplierForm()
     {
