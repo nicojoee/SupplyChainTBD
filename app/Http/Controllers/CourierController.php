@@ -301,9 +301,10 @@ class CourierController extends Controller
             return back()->with('error', 'Courier profile not found.');
         }
 
-        // Check courier has capacity defined
-        if (!$courier->vehicle_capacity) {
-            return back()->with('error', 'Please update your vehicle capacity in your profile.');
+        // Check courier has completed vehicle registration
+        if (!$courier->vehicle_type || !$courier->vehicle_capacity || !$courier->phone) {
+            return redirect()->route('courier.profile')
+                ->with('error', 'Anda harus mendaftarkan kendaraan terlebih dahulu sebelum menerima pengiriman. Silakan isi jenis truk, kapasitas, dan nomor telepon.');
         }
 
         // Get remaining quantity to deliver
