@@ -1087,9 +1087,13 @@
                 @if(auth()->user()->role === 'courier' || auth()->user()->role === 'superadmin')
                 <div class="nav-section">
                     <div class="nav-section-title">Courier</div>
-                    <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.*') ? 'active' : '' }}">
+                    <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.index') ? 'active' : '' }}">
                         <span class="nav-icon">🚛</span>
                         My Deliveries
+                    </a>
+                    <a href="{{ route('courier.available-deliveries') }}" class="nav-link {{ request()->routeIs('courier.available-deliveries') ? 'active' : '' }}">
+                        <span class="nav-icon">📦</span>
+                        Available Deliveries
                     </a>
                 </div>
                 @endif
