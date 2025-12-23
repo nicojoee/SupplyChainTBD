@@ -1591,10 +1591,22 @@
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            // Check if response is ok (status 200-299)
+            if (response.ok) {
+                return response.json().catch(() => ({ success: true }));
+            }
+            // Try to parse error response
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to delete');
+            }).catch(() => {
+                throw new Error('Failed to delete');
+            });
+        })
         .then(data => {
             if (data.success) {
                 alert('Deleted successfully!');
@@ -1605,7 +1617,7 @@
         })
         .catch(err => {
             console.error('Error deleting:', err);
-            alert('Error deleting entity');
+            alert('Error: ' + err.message);
         });
     }
     @endif
