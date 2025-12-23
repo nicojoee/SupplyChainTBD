@@ -307,8 +307,16 @@ class CourierController extends Controller
                 ->with('error', 'Anda harus mendaftarkan kendaraan terlebih dahulu sebelum menerima pengiriman. Silakan isi jenis truk, kapasitas, dan nomor telepon.');
         }
 
+        // Get total quantity - fallback to sum of items if total_quantity is 0
+        $totalQty = $order->total_quantity;
+        if ($totalQty <= 0) {
+            $totalQty = $order->items->sum('quantity');
+            // Update order with calculated total_quantity for future use
+            $order->update(['total_quantity' => $totalQty]);
+        }
+
         // Get remaining quantity to deliver
-        $remainingQty = $order->getRemainingQuantity();
+        $remainingQty = $totalQty - $order->delivered_quantity;
         if ($remainingQty <= 0) {
             return back()->with('error', 'This order has been fully delivered.');
         }
@@ -326,12 +334,13 @@ class CourierController extends Controller
         $newDeliveredQty = $order->delivered_quantity + $quantityToCarry;
 
         // Determine if this completes the order or leaves remainder
-        if ($newDeliveredQty >= $order->total_quantity) {
+        if ($newDeliveredQty >= $totalQty) {
             // This courier completes the delivery
             $order->update([
                 'courier_id' => $courier->id,
                 'courier_accepted_at' => now(),
-                'delivered_quantity' => $order->total_quantity,
+                'total_quantity' => $totalQty,
+                'delivered_quantity' => $totalQty,
                 'status' => 'processing',
             ]);
             $message = "Delivery fully accepted! Carrying {$quantityToCarry} ton.";

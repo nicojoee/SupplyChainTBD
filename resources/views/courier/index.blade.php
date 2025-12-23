@@ -54,8 +54,16 @@
         <div style="padding: 1rem; display: grid; gap: 0.75rem;">
             @foreach($availableOrders as $order)
             @php
+                // Calculate total quantity - fallback to sum of items if total_quantity is 0
                 $totalQty = $order->total_quantity;
-                $remainingQty = $order->getRemainingQuantity();
+                if ($totalQty <= 0) {
+                    $totalQty = $order->items->sum('quantity');
+                }
+                
+                // Calculate remaining quantity
+                $remainingQty = $totalQty - $order->delivered_quantity;
+                if ($remainingQty < 0) $remainingQty = $totalQty;
+                
                 $courierCapacity = $courier->vehicle_capacity ?? 15;
                 $willCarry = min($courierCapacity, $remainingQty);
             @endphp
@@ -65,23 +73,21 @@
                         <div style="font-weight: 600;">{{ $order->order_number }}</div>
                         <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">
                             @foreach($order->items as $item)
-                                {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }}){{ !$loop->last ? ', ' : '' }}
+                                {{ $item->product->name ?? 'N/A' }} (x{{ number_format($item->quantity, 1) }} ton){{ !$loop->last ? ', ' : '' }}
                             @endforeach
                         </div>
                         <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;">
                             From: {{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}
                         </div>
-                        @if($totalQty > 0)
                         <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 6px; font-size: 0.85rem;">
                             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                                 <span>📦 Total: <strong>{{ number_format($totalQty, 1) }} ton</strong></span>
                                 @if($remainingQty < $totalQty)
                                     <span style="color: #f59e0b;">⏳ Remaining: <strong>{{ number_format($remainingQty, 1) }} ton</strong></span>
                                 @endif
-                                <span style="color: #22c55e;">🚛 You'll carry: <strong>{{ number_format($willCarry, 1) }} ton</strong></span>
+                                <span style="color: #22c55e;">🚛 You'll carry: <strong>{{ number_format($willCarry, 1) }} ton</strong> (Max: {{ $courierCapacity }} ton)</span>
                             </div>
                         </div>
-                        @endif
                     </div>
                     <div style="text-align: right;">
                         <div style="font-weight: 600; color: #22c55e;">{{ formatRupiah($order->total_amount) }}</div>
