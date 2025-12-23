@@ -707,7 +707,7 @@
         });
 
         // Couriers
-        Object.values(allMarkers.couriers).forEach(marker => {
+        Object.values(courierMarkers).forEach(marker => {
             if (category === 'all' || category === 'courier') {
                 if (!map.hasLayer(marker)) marker.addTo(map);
             } else {
@@ -806,7 +806,7 @@
     const searchInput = document.getElementById('map-search');
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
-    let allMarkers = {}; // Store markers by type-id
+    let allMarkers = { suppliers: {}, factories: {}, distributors: {} }; // Store markers by type and id
 
     searchInput.addEventListener('input', function() {
         const query = this.value.trim();
@@ -824,10 +824,28 @@
             fetch(`{{ route('api.search') }}?q=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(results => {
-                    if (results.length === 0) {
-                        searchResults.innerHTML = '<div style="padding: 12px; color: rgba(255,255,255,0.5);">No results found</div>';
+                    // Filter results based on active category filter
+                    let filteredResults = results;
+                    if (activeFilter !== 'all') {
+                        // Map filter name to entity type (handle singular/plural differences)
+                        const filterTypeMap = {
+                            'supplier': 'supplier',
+                            'factory': 'factory',
+                            'distributor': 'distributor',
+                            'courier': 'courier'
+                        };
+                        const allowedType = filterTypeMap[activeFilter];
+                        filteredResults = results.filter(item => item.type === allowedType);
+                    }
+                    
+                    if (filteredResults.length === 0) {
+                        // Show different message if filtered vs no results at all
+                        const filterMessage = activeFilter !== 'all' 
+                            ? `No ${activeFilter} results found. <a href="#" onclick="filterMap('all'); document.getElementById('map-search').dispatchEvent(new Event('input')); return false;" style="color: #3b82f6; text-decoration: underline;">Show all categories</a>` 
+                            : 'No results found';
+                        searchResults.innerHTML = `<div style="padding: 12px; color: rgba(255,255,255,0.5);">${filterMessage}</div>`;
                     } else {
-                        searchResults.innerHTML = results.map(item => `
+                        searchResults.innerHTML = filteredResults.map(item => `
                             <div class="search-result-item" 
                                  onclick="locateEntity(${item.latitude}, ${item.longitude}, '${item.type}', ${item.id}, '${item.name.replace(/'/g, "\\'")}')"
                                  style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
@@ -867,8 +885,14 @@
         
         // Find and open the marker popup
         const markerKey = `${type}-${id}`;
-        if (allMarkers[markerKey]) {
-            setTimeout(() => allMarkers[markerKey].openPopup(), 300);
+        const marker = allMarkers[markerKey] || allMarkers.suppliers?.[id] || allMarkers.factories?.[id] || allMarkers.distributors?.[id] || courierMarkers?.[id];
+        
+        if (marker) {
+            // Ensure marker is visible on map (in case it was hidden by filter)
+            if (!map.hasLayer(marker)) {
+                marker.addTo(map);
+            }
+            setTimeout(() => marker.openPopup(), 300);
         }
     };
 
@@ -1092,14 +1116,6 @@
 
     // Fetch and display markers
     let selfMarker = null;
-    
-    // Object to store all markers by category for filtering
-    const allMarkers = {
-        suppliers: {},
-        factories: {},
-        distributors: {},
-        couriers: {}
-    };
     
     fetch('{{ route("api.map-data") }}')
         .then(response => response.json())
@@ -1372,16 +1388,17 @@
                     .addTo(map)
                     .bindPopup(popupContent, { maxWidth: 300 });
                 
-                // Store marker for filtering - use nested structure
+                // Store marker for search auto-locate and category filtering
+                // Store by type and id for filtering, and also legacy format for search
                 if (props.type === 'supplier') {
                     allMarkers.suppliers[props.id] = marker;
                 } else if (props.type === 'factory') {
                     allMarkers.factories[props.id] = marker;
                 } else if (props.type === 'distributor') {
                     allMarkers.distributors[props.id] = marker;
-                } else if (props.type === 'courier') {
-                    allMarkers.couriers[props.id] = marker;
                 }
+                // Also keep legacy format for search locateEntity
+                allMarkers[`${props.type}-${props.id}`] = marker;
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
