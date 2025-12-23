@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'App\\Http\\Controllers\\AuthController' => $baseDir . '/app/Http/Controllers/AuthController.php',
+    'App\\Http\\Controllers\\ChatController' => $baseDir . '/app/Http/Controllers/ChatController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
     'App\\Http\\Controllers\\CourierController' => $baseDir . '/app/Http/Controllers/CourierController.php',
     'App\\Http\\Controllers\\DashboardController' => $baseDir . '/app/Http/Controllers/DashboardController.php',
@@ -15,11 +16,14 @@ return array(
     'App\\Http\\Controllers\\SuperAdminController' => $baseDir . '/app/Http/Controllers/SuperAdminController.php',
     'App\\Http\\Controllers\\SupplierController' => $baseDir . '/app/Http/Controllers/SupplierController.php',
     'App\\Http\\Middleware\\RoleMiddleware' => $baseDir . '/app/Http/Middleware/RoleMiddleware.php',
+    'App\\Models\\BroadcastMessage' => $baseDir . '/app/Models/BroadcastMessage.php',
+    'App\\Models\\Conversation' => $baseDir . '/app/Models/Conversation.php',
     'App\\Models\\Courier' => $baseDir . '/app/Models/Courier.php',
     'App\\Models\\Distributor' => $baseDir . '/app/Models/Distributor.php',
     'App\\Models\\DistributorStock' => $baseDir . '/app/Models/DistributorStock.php',
     'App\\Models\\Factory' => $baseDir . '/app/Models/Factory.php',
     'App\\Models\\FactoryProduct' => $baseDir . '/app/Models/FactoryProduct.php',
+    'App\\Models\\Message' => $baseDir . '/app/Models/Message.php',
     'App\\Models\\Order' => $baseDir . '/app/Models/Order.php',
     'App\\Models\\OrderItem' => $baseDir . '/app/Models/OrderItem.php',
     'App\\Models\\Product' => $baseDir . '/app/Models/Product.php',

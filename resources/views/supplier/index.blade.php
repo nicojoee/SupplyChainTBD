@@ -39,8 +39,8 @@
                 <thead>
                     <tr>
                         <th>Product</th>
-                        <th>Price</th>
-                        <th>Stock</th>
+                        <th>Price/Ton</th>
+                        <th>Stock (Ton)</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -49,7 +49,7 @@
                     <tr id="product-row-{{ $sp->id }}">
                         <td>{{ $sp->product->name ?? 'Unknown' }}</td>
                         <td>
-                            <span class="display-value">${{ number_format($sp->price, 2) }}</span>
+                            <span class="display-value">{{ formatRupiah($sp->price) }}</span>
                             <input type="number" class="edit-input form-control" name="price" value="{{ $sp->price }}" 
                                    step="0.01" min="0" style="display: none; width: 100px; padding: 4px;">
                         </td>
@@ -105,12 +105,12 @@
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Price ($)</label>
+                <label class="form-label">Price/Ton (Rp)</label>
                 <input type="number" name="price" class="form-control" step="0.01" min="0" required placeholder="Enter price">
             </div>
             <div class="form-group">
-                <label class="form-label">Stock Quantity</label>
-                <input type="number" name="stock_quantity" class="form-control" min="0" required placeholder="Enter quantity">
+                <label class="form-label">Stock Quantity (Ton)</label>
+                <input type="number" name="stock_quantity" class="form-control" min="0" step="0.01" required placeholder="Enter quantity in tons">
             </div>
             <button type="submit" class="btn btn-primary">Add Product</button>
         </form>
@@ -146,7 +146,7 @@
                                 <div style="font-size: 0.85rem;">{{ $item->product->name ?? 'Product' }} × {{ $item->quantity }}</div>
                             @endforeach
                         </td>
-                        <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+                        <td><strong>{{ formatRupiah($order->total_amount) }}</strong></td>
                         <td>
                             @php
                                 $statusColors = [

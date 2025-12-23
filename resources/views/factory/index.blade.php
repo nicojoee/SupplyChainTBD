@@ -371,3 +371,4 @@ function deleteProduct(productId) {
 }
 </script>
 @endsection
+
