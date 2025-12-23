@@ -520,6 +520,20 @@ document.getElementById('message-form').addEventListener('submit', async functio
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     const messageInput = this.querySelector('input[name="message"]');
+    const imageInput = this.querySelector('input[name="image"]');
+    
+    // Get values BEFORE disabling inputs
+    const messageValue = messageInput.value.trim();
+    const hasImage = imageInput && imageInput.files && imageInput.files[0];
+    
+    // Validate: require either message or image
+    if (!messageValue && !hasImage) {
+        alert('⚠️ Please enter a message or attach an image');
+        return;
+    }
+    
+    // Create FormData BEFORE disabling inputs (disabled inputs are excluded from FormData)
+    const formData = new FormData(this);
     
     submitBtn.innerHTML = '⏳ Sending...';
     submitBtn.disabled = true;
@@ -527,20 +541,6 @@ document.getElementById('message-form').addEventListener('submit', async functio
     isMessageSending = true;
     
     try {
-        const formData = new FormData(this);
-        const imageInput = this.querySelector('input[name="image"]');
-        const messageValue = messageInput.value.trim();
-        const hasImage = imageInput && imageInput.files && imageInput.files[0];
-        
-        // Validate: require either message or image
-        if (!messageValue && !hasImage) {
-            alert('⚠️ Please enter a message or attach an image');
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            messageInput.disabled = false;
-            isMessageSending = false;
-            return;
-        }
         
         // Compress image if exists and > 200KB
         if (imageInput && imageInput.files && imageInput.files[0]) {
