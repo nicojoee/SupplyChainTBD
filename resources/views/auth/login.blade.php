@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Supply Chain GIS</title>
+    <title>Login - Supply Chain Management Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #0ea5e9;
-            --dark: #1e1b4b;
-            --darker: #0f0a3c;
+            --primary: #2563eb;        /* Enterprise Blue */
+            --primary-dark: #1e40af;
+            --surface: #ffffff;
+            --background: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
         }
 
         * {
@@ -25,260 +27,305 @@
             font-family: 'Inter', sans-serif;
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, #1e3a5f 100%);
+            flex-direction: column;
+            background-color: var(--background);
+            color: var(--text-main);
+            overflow-x: hidden;
             position: relative;
-            overflow: hidden;
         }
 
-        /* Animated background */
-        .bg-animation {
+        /* Subtle Logistics/Network Background */
+        .bg-network {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0f172a; /* Slate 900 */
+            background-image: 
+                radial-gradient(at 40% 20%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        /* Animated connected nodes CSS effect */
+        .particles {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: 0;
+            z-index: -1;
         }
-
-        .bg-animation span {
+        .particle {
             position: absolute;
-            display: block;
-            width: 20px;
-            height: 20px;
-            background: rgba(99, 102, 241, 0.1);
-            animation: animate 25s linear infinite;
-            bottom: -150px;
+            width: 2px;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
             border-radius: 50%;
+            animation: moveParticle 20s infinite linear;
+        }
+        @keyframes moveParticle {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-20vh) translateX(20vw); opacity: 0; }
         }
 
-        .bg-animation span:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-        .bg-animation span:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; animation-duration: 12s; }
-        .bg-animation span:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-        .bg-animation span:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; animation-duration: 18s; }
-        .bg-animation span:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-        .bg-animation span:nth-child(6) { left: 75%; width: 110px; height: 110px; animation-delay: 3s; }
-        .bg-animation span:nth-child(7) { left: 35%; width: 150px; height: 150px; animation-delay: 7s; }
-        .bg-animation span:nth-child(8) { left: 50%; width: 25px; height: 25px; animation-delay: 15s; animation-duration: 45s; }
-        .bg-animation span:nth-child(9) { left: 20%; width: 15px; height: 15px; animation-delay: 2s; animation-duration: 35s; }
-        .bg-animation span:nth-child(10) { left: 85%; width: 150px; height: 150px; animation-delay: 0s; animation-duration: 11s; }
-
-        @keyframes animate {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-                border-radius: 50%;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-                border-radius: 50%;
-            }
-        }
-
-        .login-container {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 420px;
+        /* Main Layout */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 2rem;
+            position: relative;
+            z-index: 10;
         }
 
         .login-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
             padding: 3rem;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
+        .logo-area {
             margin-bottom: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
         }
 
         .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+            font-size: 2rem;
         }
-
-        .logo-text {
-            font-size: 1.5rem;
+        
+        .app-name {
             font-weight: 700;
-            background: linear-gradient(135deg, #fff, #c7d2fe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .welcome-text {
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 1.25rem;
+            color: #0f172a;
+            letter-spacing: -0.025em;
         }
 
         .title {
-            color: #fff;
-            font-size: 1.75rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
         }
 
+        .subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.5;
+        }
+
+        /* Google Button */
         .google-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
+            gap: 12px;
             width: 100%;
-            padding: 1rem 1.5rem;
-            background: #fff;
-            border: none;
-            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            background-color: #ffffff;
+            color: #374151;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
             font-size: 1rem;
             font-weight: 500;
-            color: #374151;
+            font-family: 'Roboto', sans-serif;
             cursor: pointer;
-            transition: all 0.3s;
             text-decoration: none;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            position: relative;
         }
 
         .google-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(255, 255, 255, 0.1);
+            background-color: #f8fafc;
+            box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+            border-color: #d2e3fc;
         }
 
-        .google-btn svg {
-            width: 24px;
-            height: 24px;
+        .google-btn:active {
+            background-color: #f1f5f9;
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            margin: 2rem 0;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 0.85rem;
+        .google-icon {
+            width: 18px;
+            height: 18px;
         }
 
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .divider span {
-            padding: 0 1rem;
-        }
-
-        .features {
-            text-align: left;
-        }
-
-        .feature {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fee2e2;
+            color: #ef4444;
             padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-        }
-
-        .feature-icon {
-            font-size: 1.25rem;
-        }
-
-        .alert {
-            padding: 1rem;
-            border-radius: 10px;
+            border-radius: 8px;
             margin-bottom: 1.5rem;
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
+            font-size: 0.875rem;
             text-align: left;
-            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .footer {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            color: #94a3b8;
+            padding: 1.5rem 2rem;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-title {
+            color: #e2e8f0;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.75rem;
+        }
+
+        .contact-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem 2rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .contact-link {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .contact-link:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+
+        .student-id {
+            opacity: 0.6;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .login-card {
+                padding: 2rem;
+            }
+            .contact-grid {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="bg-animation">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
+    <div class="bg-network">
+        <!-- Particles for animated effect -->
+        <div class="particles">
+            <div class="particle" style="top: 10%; left: 20%; animation-duration: 15s; animation-delay: 0s;"></div>
+            <div class="particle" style="top: 30%; left: 80%; animation-duration: 25s; animation-delay: 2s;"></div>
+            <div class="particle" style="top: 70%; left: 40%; animation-duration: 20s; animation-delay: 5s;"></div>
+            <div class="particle" style="top: 40%; left: 10%; animation-duration: 18s; animation-delay: 1s;"></div>
+            <div class="particle" style="top: 80%; left: 90%; animation-duration: 22s; animation-delay: 3s;"></div>
+        </div>
     </div>
 
-    <div class="login-container">
+    <main class="main-content">
         <div class="login-card">
-            <div class="logo">
-                <div class="logo-icon">🌐</div>
-                <span class="logo-text">Supply Chain GIS</span>
+            <div class="logo-area">
+                <span class="logo-icon">🌐</span>
+                <span class="app-name">Supply Chain Portal</span>
             </div>
+
+            <h1 class="title">Welcome Back</h1>
+            <p class="subtitle">Use your ITS Google account to continue to the dashboard.</p>
 
             @if(session('error'))
-                <div class="alert">{{ session('error') }}</div>
+                <div class="alert-error">
+                    {{ session('error') }}
+                </div>
             @endif
 
-            <p class="welcome-text">Welcome back!</p>
-            <h1 class="title">Sign in to continue</h1>
-
             <a href="{{ route('auth.google') }}" class="google-btn">
-                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                <svg class="google-icon" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.64 9.2c0-.637-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"></path>
+                    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18L12.048 13.56c-.806.54-1.836.86-3.048.86-2.344 0-4.328-1.584-5.036-3.715H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"></path>
+                    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"></path>
+                    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.157 6.656 3.58 9 3.58z" fill="#EA4335"></path>
                 </svg>
-                Continue with Google
+                <span>Continue with Google</span>
             </a>
+        </div>
+    </main>
 
-            <div class="divider">
-                <span>Features</span>
-            </div>
-
-            <div class="features">
-                <div class="feature">
-                    <span class="feature-icon">📍</span>
-                    Real-time GIS Tracking
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-title">Contact Superadmin for Website Access</div>
+            <div class="contact-grid">
+                <div class="contact-item">
+                    <a href="mailto:5002221003@student.its.ac.id" class="contact-link" title="Send email to Nicholas">
+                        <span>Nicholas Joe Sumantri</span>
+                        <span class="student-id">(5002221003)</span>
+                    </a>
                 </div>
-                <div class="feature">
-                    <span class="feature-icon">📦</span>
-                    Supplier Management
+                <div class="contact-item">
+                    <a href="mailto:50002221041@student.its.ac.id" class="contact-link" title="Send email to Nabilah">
+                        <span>Nabilah Safa Nur Fatimah</span>
+                        <span class="student-id">(50002221041)</span>
+                    </a>
                 </div>
-                <div class="feature">
-                    <span class="feature-icon">🏭</span>
-                    Factory Operations
+                <div class="contact-item">
+                    <a href="mailto:5002221055@student.its.ac.id" class="contact-link" title="Send email to Marsyanda">
+                        <span>Marsyanda Auditya</span>
+                        <span class="student-id">(5002221055)</span>
+                    </a>
                 </div>
-                <div class="feature">
-                    <span class="feature-icon">🏪</span>
-                    Distribution Network
+                <div class="contact-item">
+                    <a href="mailto:5002221084@student.its.ac.id" class="contact-link" title="Send email to Moch Fajar">
+                        <span>Moch Fajar Aditya Putra</span>
+                        <span class="student-id">(5002221084)</span>
+                    </a>
+                </div>
+                <div class="contact-item">
+                    <a href="mailto:5002221085@student.its.ac.id" class="contact-link" title="Send email to Prasasti">
+                        <span>Prasasti Intan Pratiwi</span>
+                        <span class="student-id">(5002221085)</span>
+                    </a>
                 </div>
             </div>
         </div>
-    </div>
+    </footer>
 
     <script>
         // Clear dismissed broadcasts when user visits login page (after logout)
