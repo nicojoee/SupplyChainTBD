@@ -707,7 +707,7 @@
         });
 
         // Couriers
-        Object.values(courierMarkers).forEach(marker => {
+        Object.values(allMarkers.couriers).forEach(marker => {
             if (category === 'all' || category === 'courier') {
                 if (!map.hasLayer(marker)) marker.addTo(map);
             } else {
@@ -1093,6 +1093,14 @@
     // Fetch and display markers
     let selfMarker = null;
     
+    // Object to store all markers by category for filtering
+    const allMarkers = {
+        suppliers: {},
+        factories: {},
+        distributors: {},
+        couriers: {}
+    };
+    
     fetch('{{ route("api.map-data") }}')
         .then(response => response.json())
         .then(data => {
@@ -1364,8 +1372,16 @@
                     .addTo(map)
                     .bindPopup(popupContent, { maxWidth: 300 });
                 
-                // Store marker for search auto-locate
-                allMarkers[`${props.type}-${props.id}`] = marker;
+                // Store marker for filtering - use nested structure
+                if (props.type === 'supplier') {
+                    allMarkers.suppliers[props.id] = marker;
+                } else if (props.type === 'factory') {
+                    allMarkers.factories[props.id] = marker;
+                } else if (props.type === 'distributor') {
+                    allMarkers.distributors[props.id] = marker;
+                } else if (props.type === 'courier') {
+                    allMarkers.couriers[props.id] = marker;
+                }
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
