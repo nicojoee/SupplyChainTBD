@@ -44,6 +44,16 @@ class SuperAdminController extends Controller
             'role' => 'required|in:superadmin,supplier,factory,distributor,courier',
         ]);
 
+        // Prevent modifying superadmin accounts (including self)
+        if ($user->role === 'superadmin') {
+            return back()->with('error', 'Cannot modify role of superadmin accounts.');
+        }
+
+        // Prevent changing any user to superadmin
+        if ($request->role === 'superadmin') {
+            return back()->with('error', 'Cannot assign superadmin role through this interface.');
+        }
+
         $oldRole = $user->role;
         $newRole = $request->role;
         
