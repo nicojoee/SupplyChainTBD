@@ -1465,8 +1465,7 @@
             .catch(error => console.error('Error loading page:', error));
     }
 
-    // Store courier markers for updating
-    let courierMarkers = {};
+    // courierMarkers is already defined as alias to allMarkers.couriers at line 817
 
     // Function to refresh courier positions every 5 seconds
     function refreshCourierPositions() {
