@@ -530,25 +530,8 @@ document.getElementById('message-form').addEventListener('submit', async functio
         const formData = new FormData(this);
         const imageInput = this.querySelector('input[name="image"]');
         
-        // Get message value
-        const messageValue = messageInput.value.trim();
-        const hasImage = imageInput && imageInput.files && imageInput.files.length > 0;
-        
-        // Frontend validation
-        if (!messageValue && !hasImage) {
-            alert('Please enter a message or attach an image.');
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-            messageInput.disabled = false;
-            isMessageSending = false;
-            return;
-        }
-        
-        // Update formData with trimmed message
-        formData.set('message', messageValue || '');
-        
         // Compress image if exists and > 200KB
-        if (hasImage) {
+        if (imageInput && imageInput.files && imageInput.files[0]) {
             const originalFile = imageInput.files[0];
             if (originalFile.size > 200 * 1024) {
                 submitBtn.innerHTML = '⏳ Compressing...';
@@ -556,9 +539,6 @@ document.getElementById('message-form').addEventListener('submit', async functio
                 formData.set('image', compressedFile);
             }
         }
-        
-        // Debug log
-        console.log('Sending message:', messageValue, 'Has image:', hasImage);
         
         submitBtn.innerHTML = '⏳ Sending...';
         

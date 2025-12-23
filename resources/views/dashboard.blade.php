@@ -806,15 +806,7 @@
     const searchInput = document.getElementById('map-search');
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
-    // Store markers by category for filtering
-    let allMarkers = {
-        suppliers: {},
-        factories: {},
-        distributors: {},
-        couriers: {}
-    };
-    // Alias for courier markers (used by filterMap)
-    const courierMarkers = allMarkers.couriers;
+    let allMarkers = {}; // Store markers by type-id
 
     searchInput.addEventListener('input', function() {
         const query = this.value.trim();
@@ -873,13 +865,10 @@
         // Zoom to location
         map.setView([lat, lng], 16);
         
-        // Find and open the marker popup using new structure
-        let categoryKey = type + 's'; // supplier -> suppliers
-        if (categoryKey === 'factorys') categoryKey = 'factories';
-        
-        const categoryMarkers = allMarkers[categoryKey];
-        if (categoryMarkers && categoryMarkers[id]) {
-            setTimeout(() => categoryMarkers[id].openPopup(), 300);
+        // Find and open the marker popup
+        const markerKey = `${type}-${id}`;
+        if (allMarkers[markerKey]) {
+            setTimeout(() => allMarkers[markerKey].openPopup(), 300);
         }
     };
 
@@ -1375,13 +1364,8 @@
                     .addTo(map)
                     .bindPopup(popupContent, { maxWidth: 300 });
                 
-                // Store marker for search auto-locate and category filtering
-                const categoryKey = props.type + 's'; // supplier -> suppliers
-                if (categoryKey === 'factorys') {
-                    allMarkers.factories[props.id] = marker;
-                } else if (allMarkers[categoryKey]) {
-                    allMarkers[categoryKey][props.id] = marker;
-                }
+                // Store marker for search auto-locate
+                allMarkers[`${props.type}-${props.id}`] = marker;
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
@@ -1397,7 +1381,7 @@
             // For courier: use GPS auto-locate for accurate real-time position
             console.log('Courier detected - triggering GPS auto-locate...');
             setTimeout(() => {
-                locateMyAccount();
+                autoLocateMe();
             }, 1000);
             @else
             if (selfEntity && selfEntity.latitude && selfEntity.longitude && 
@@ -1465,7 +1449,8 @@
             .catch(error => console.error('Error loading page:', error));
     }
 
-    // courierMarkers is already defined as alias to allMarkers.couriers at line 817
+    // Store courier markers for updating
+    let courierMarkers = {};
 
     // Function to refresh courier positions every 5 seconds
     function refreshCourierPositions() {

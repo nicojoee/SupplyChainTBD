@@ -178,11 +178,7 @@ class ChatController extends Controller
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
 
-            // Check if message is empty (not just null, but also empty string or whitespace)
-            $messageContent = trim($request->message ?? '');
-            $hasImage = $request->hasFile('image');
-            
-            if (empty($messageContent) && !$hasImage) {
+            if (!$request->message && !$request->hasFile('image')) {
                 return response()->json(['error' => 'Message or image is required'], 400);
             }
 
@@ -198,7 +194,7 @@ class ChatController extends Controller
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $user->id,
-                'message' => !empty($messageContent) ? $messageContent : null,
+                'message' => $request->message,
                 'image_path' => $imagePath,
             ]);
 
