@@ -8,22 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Calm & Elegant Palette */
             --bg-page: #f8fafc;
-            --bg-glass: rgba(255, 255, 255, 0.85);
             --primary: #3b82f6;
-            --primary-soft: #eff6ff;
             --text-dark: #0f172a;
             --text-medium: #475569;
             --text-light: #94a3b8;
-            --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -31,17 +23,16 @@
             color: var(--text-dark);
             min-height: 100vh;
             display: flex;
-            overflow: hidden;
         }
 
         /* Split Layout */
         .container {
             display: flex;
             width: 100%;
-            height: 100vh;
+            min-height: 100vh;
         }
 
-        /* Left Side - Visual & Features */
+        /* Visual Side (Left/Top) */
         .visual-side {
             flex: 1.2;
             background: #0f172a;
@@ -54,13 +45,9 @@
             color: white;
         }
 
-        /* Calm Abstract Background */
         .visual-bg {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: 
                 radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 40%);
@@ -78,14 +65,12 @@
             font-weight: 700;
             line-height: 1.1;
             margin-bottom: 2rem;
-            background: linear-gradient(to right, #fff, #94a3b8);
+            background: linear-gradient(to right, #fff, #cbd5e1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* Features List */
         .features-list {
-            list-style: none;
             display: grid;
             gap: 2rem;
         }
@@ -94,23 +79,14 @@
             display: flex;
             gap: 1.5rem;
             align-items: flex-start;
-            opacity: 0;
-            animation: fadeInSlide 0.8s forwards;
         }
-        
-        .feature-item:nth-child(1) { animation-delay: 0.2s; }
-        .feature-item:nth-child(2) { animation-delay: 0.4s; }
-        .feature-item:nth-child(3) { animation-delay: 0.6s; }
 
         .feature-icon {
-            width: 48px;
-            height: 48px;
+            width: 48px; height: 48px;
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             font-size: 1.25rem;
             flex-shrink: 0;
         }
@@ -120,14 +96,13 @@
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
         .feature-text p {
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.6);
             line-height: 1.5;
         }
 
-        /* Right Side - Login Form */
+        /* Login Side (Right/Bottom) */
         .login-side {
             flex: 1;
             background: white;
@@ -137,165 +112,125 @@
             justify-content: center;
             padding: 2rem;
             position: relative;
-            box-shadow: -20px 0 40px rgba(0,0,0,0.02);
+            overflow-y: auto; /* Allow scrolling on mobile */
         }
 
         .login-wrapper {
             width: 100%;
             max-width: 420px;
+            padding: 2rem 0;
         }
 
-        .brand-logo {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
+        .brand-logo { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .welcome-title { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .welcome-subtitle { font-size: 0.95rem; color: var(--text-medium); margin-bottom: 2rem; }
 
-        .welcome-title {
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 0.5rem;
-        }
-
-        .welcome-subtitle {
-            font-size: 0.95rem;
-            color: var(--text-medium);
-            margin-bottom: 2.5rem;
-        }
-
-        /* Google Button Style */
         .google-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 1rem;
-            background-color: white;
-            color: var(--text-medium);
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%; padding: 1rem;
+            background-color: white; color: var(--text-medium);
+            border: 1px solid #e2e8f0; border-radius: 12px;
+            font-size: 1rem; font-weight: 600;
+            cursor: pointer; text-decoration: none;
             transition: all 0.2s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-
         .google-btn:hover {
-            border-color: #cbd5e1;
-            background-color: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            color: var(--text-dark);
-        }
-
-        .google-btn:active {
-            transform: translateY(0);
+            border-color: #cbd5e1; background-color: #f8fafc;
+            transform: translateY(-1px); color: var(--text-dark);
         }
 
         .alert-error {
-            background-color: #fef2f2;
-            border: 1px solid #fee2e2;
-            color: #ef4444;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            background-color: #fef2f2; border: 1px solid #fee2e2; color: #ef4444;
+            padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;
+            font-size: 0.9rem; display: flex; align-items: center; gap: 0.75rem;
         }
 
-        /* Footer Contacts - Clean & Modern */
+        /* Footer Contacts */
         .footer-contacts {
-            margin-top: 3rem;
-            padding-top: 2rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
             border-top: 1px solid #f1f5f9;
         }
-
         .footer-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-light);
-            font-weight: 600;
-            margin-bottom: 1rem;
+            font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--text-light); font-weight: 600; margin-bottom: 0.75rem;
             text-align: center;
         }
-
         .contact-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            font-size: 0.85rem;
+            display: flex; flex-direction: column; gap: 0.4rem;
+            font-size: 0.8rem;
         }
-
         .contact-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0.75rem;
-            border-radius: 8px;
-            color: var(--text-medium);
-            text-decoration: none;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.4rem 0.6rem; border-radius: 6px;
+            color: var(--text-medium); text-decoration: none;
             transition: background 0.2s;
         }
+        .contact-item:hover { background: #f8fafc; color: var(--primary); }
+        .nrp { font-size: 0.7rem; color: var(--text-light); font-family: monospace; }
 
-        .contact-item:hover {
-            background: #f8fafc;
-            color: var(--primary);
-        }
-
-        .nrp {
-            font-size: 0.75rem;
+        /* Dept Footer */
+        .dept-footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #f1f5f9;
+            text-align: center;
             color: var(--text-light);
-            font-family: monospace;
+            font-size: 0.75rem;
+            line-height: 1.5;
         }
 
-        @keyframes fadeInSlide {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Responsive */
+        /* Mobile Responsive */
         @media (max-width: 960px) {
-            .visual-side { display: none; }
-            .login-side { flex: 1; }
+            .container { flex-direction: column; }
+            
+            .visual-side {
+                padding: 3rem 2rem;
+                flex: none; /* Auto height based on content */
+            }
+
+            .hero-title { font-size: 2rem; }
+            .feature-text p { display: none; } /* Provide cleaner look on mobile */
+            .feature-item { align-items: center; }
+            .features-list { gap: 1rem; margin-top: 1rem; }
+            .feature-icon { width: 36px; height: 36px; font-size: 1rem; }
+            .feature-text h3 { font-size: 0.95rem; margin: 0; }
+            
+            .login-side { padding: 2rem; flex: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Visualization Side -->
+        <!-- Key Features Visual Side -->
         <div class="visual-side">
             <div class="visual-bg"></div>
             <div class="visual-content">
-                <h1 class="hero-title">Intelligent Supply Chain Management</h1>
+                <h1 class="hero-title">Supply Chain <br>Intelligence</h1>
                 
                 <div class="features-list">
                     <div class="feature-item">
-                        <div class="feature-icon">🌏</div>
+                        <div class="feature-icon">�</div>
                         <div class="feature-text">
                             <h3>Real-time GIS Tracking</h3>
-                            <p>Monitor your fleet and shipments globally with precision GPS tracking and route optimization.</p>
+                            <p>Global fleet monitoring & route optimization.</p>
                         </div>
                     </div>
                     
                     <div class="feature-item">
-                        <div class="feature-icon">🔗</div>
+                        <div class="feature-icon">🏭</div>
                         <div class="feature-text">
-                            <h3>End-to-End Visibility</h3>
-                            <p>Seamless connection from suppliers to distributors. Track every step of your product's journey.</p>
+                            <h3>Integrated Ecosystem</h3>
+                            <p>Unified workflow for Suppliers, Factories & Distributors.</p>
                         </div>
                     </div>
 
                     <div class="feature-item">
-                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-icon">�</div>
                         <div class="feature-text">
-                            <h3>Secure Collaboration</h3>
-                            <p>Verify identities and manage access with enterprise-grade security for all stakeholders.</p>
+                            <h3>Role-Based Security</h3>
+                            <p>Secure access for every stakeholder level.</p>
                         </div>
                     </div>
                 </div>
@@ -305,8 +240,8 @@
         <!-- Login Side -->
         <div class="login-side">
             <div class="login-wrapper">
-                <div class="brand-logo">🌐</div>
-                <h2 class="welcome-title">Welcome Back</h2>
+                <div class="brand-logo">📦</div>
+                <h2 class="welcome-title">Sign In</h2>
                 <p class="welcome-subtitle">Seamlessly manage your logistics network.</p>
 
                 @if(session('error'))
@@ -317,7 +252,7 @@
                 @endif
 
                 <a href="{{ route('auth.google') }}" class="google-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
@@ -326,21 +261,21 @@
                     Continue with ITS Google Account
                 </a>
 
-                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: #94a3b8;">
-                    By creating an account, you agree to our Terms of Service and Privacy Policy.
+                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.75rem; color: #94a3b8;">
+                    Use your institutional account to continue.
                 </div>
 
-                <!-- Contact Footer -->
+                <!-- Superadmin Contacts -->
                 <div class="footer-contacts">
-                    <div class="footer-title">Need Access? Contact Superadmin</div>
+                    <div class="footer-title">Contact Superadmin</div>
                     <div class="contact-list">
                         <a href="mailto:5002221003@student.its.ac.id" class="contact-item">
                             <span>Nicholas Joe Sumantri</span>
                             <span class="nrp">5002221003</span>
                         </a>
-                        <a href="mailto:50002221041@student.its.ac.id" class="contact-item">
+                        <a href="mailto:5002221041@student.its.ac.id" class="contact-item">
                             <span>Nabilah Safa Nur Fatimah</span>
-                            <span class="nrp">50002221041</span>
+                            <span class="nrp">5002221041</span>
                         </a>
                         <a href="mailto:5002221055@student.its.ac.id" class="contact-item">
                             <span>Marsyanda Auditya</span>
@@ -356,12 +291,18 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Academic Footer -->
+                <div class="dept-footer">
+                    <div>Department of Mathematics ITS</div>
+                    <div>Group 6 : Database Technology</div>
+                    <div style="margin-top: 0.25rem; font-weight: 600;">Surabaya 2025</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Clear dismissed broadcasts when user visits login page (after logout)
         localStorage.removeItem('dismissedBroadcasts');
     </script>
 </body>
