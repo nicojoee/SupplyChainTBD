@@ -1092,6 +1092,12 @@
 
     // Fetch and display markers
     let selfMarker = null;
+    const allMarkers = {
+        suppliers: {},
+        factories: {},
+        distributors: {}
+    };
+    let courierMarkers = {};
     
     fetch('{{ route("api.map-data") }}')
         .then(response => response.json())
@@ -1364,8 +1370,16 @@
                     .addTo(map)
                     .bindPopup(popupContent, { maxWidth: 300 });
                 
-                // Store marker for search auto-locate
-                allMarkers[`${props.type}-${props.id}`] = marker;
+                // Store marker for filtering
+                if (props.type === 'supplier') {
+                    allMarkers.suppliers[props.id] = marker;
+                } else if (props.type === 'factory') {
+                    allMarkers.factories[props.id] = marker;
+                } else if (props.type === 'distributor') {
+                    allMarkers.distributors[props.id] = marker;
+                } else if (props.type === 'courier') {
+                    courierMarkers[props.id] = marker;
+                }
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
@@ -1381,7 +1395,7 @@
             // For courier: use GPS auto-locate for accurate real-time position
             console.log('Courier detected - triggering GPS auto-locate...');
             setTimeout(() => {
-                autoLocateMe();
+                locateMyAccount();
             }, 1000);
             @else
             if (selfEntity && selfEntity.latitude && selfEntity.longitude && 
@@ -1400,8 +1414,97 @@
             }
             @endif
         })
+
         .catch(err => console.error('Error loading map data:', err));
 
+    // Refresh courier positions every 3 seconds
+    function refreshCourierPositions() {
+        fetch('{{ route("api.couriers.locations") }}')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(courier => {
+                    // Skip self (handled by GPS)
+                    if (selfEntity && selfEntity.type === 'courier' && selfEntity.id == courier.id) return;
+
+                    const lat = parseFloat(courier.current_latitude);
+                    const lng = parseFloat(courier.current_longitude);
+                    const courierId = courier.id;
+
+                    if (lat && lng) {
+                        // Determine icon
+                        let icon = icons.courierNoGps;
+                        if (courier.is_gps_active) {
+                            icon = (courier.status === 'idle') ? icons.courierIdle : icons.courierBusy;
+                        }
+
+                        // Prepare Popup Content
+                        let gpsStatus = courier.is_gps_active 
+                            ? '<span style="background: #22c55e; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">📍 GPS Aktif</span>'
+                            : '<span style="background: #6b7280; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">⏸️ GPS Tidak Aktif</span>';
+                        
+                        let lastSeenInfo = '';
+                        if (courier.location_updated_at) {
+                            // Calculate time ago
+                            const lastUpdate = new Date(courier.location_updated_at);
+                            const now = new Date();
+                            const diffMs = now - lastUpdate;
+                            const diffMins = Math.floor(diffMs / 60000);
+                            
+                            let timeText = 'Just now';
+                            if (diffMins > 0) timeText = `${diffMins} min ago`;
+                            if (diffMins > 60) timeText = `> 1 hour ago`;
+                            
+                            lastSeenInfo = `<div class="popup-info" style="color: #888;">🕐 ${timeText}</div>`;
+                        }
+
+                        let popupContent = `
+                            <div class="popup-title">${courier.name}</div>
+                            <span class="popup-type courier">courier</span>
+                            <div style="margin: 8px 0;">${gpsStatus}</div>
+                            <div class="popup-info">🚚 ${courier.vehicle_type || 'Vehicle N/A'}</div>
+                            <div class="popup-info">📞 ${courier.phone || 'N/A'}</div>
+                            <div class="popup-info">Status: <strong>${courier.status}</strong></div>
+                            ${lastSeenInfo}
+                        `;
+
+                        // Check filter
+                        const shouldShow = (activeFilter === 'all' || activeFilter === 'courier');
+
+                        if (courierMarkers[courierId]) {
+                            // Update existing marker
+                            courierMarkers[courierId].setLatLng([lat, lng]);
+                            courierMarkers[courierId].setIcon(icon);
+                            courierMarkers[courierId].setPopupContent(popupContent);
+                            
+                            // Handle visibility based on filter
+                            if (shouldShow) {
+                                if (!map.hasLayer(courierMarkers[courierId])) {
+                                    courierMarkers[courierId].addTo(map);
+                                }
+                            } else {
+                                if (map.hasLayer(courierMarkers[courierId])) {
+                                    courierMarkers[courierId].removeFrom(map);
+                                }
+                            }
+                        } else {
+                            // Create new marker
+                            const newMarker = L.marker([lat, lng], { icon })
+                                .bindPopup(popupContent);
+                            
+                            courierMarkers[courierId] = newMarker;
+
+                            if (shouldShow) {
+                                newMarker.addTo(map);
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(err => console.error('Error refreshing couriers:', err));
+    }
+
+    // Start interval
+    setInterval(refreshCourierPositions, 3000);
 
     // AJAX Pagination for dashboard panels
     const pageState = {
