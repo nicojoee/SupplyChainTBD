@@ -450,7 +450,7 @@ function renderMessages(messages) {
         return `
             <div style="text-align: ${m.is_mine ? 'right' : 'left'}; margin-bottom: 0.75rem;">
                 <div style="display: inline-block; max-width: 70%; text-align: left; position: relative;" class="message-bubble">
-                    ${m.image_path ? `<img src="/storage/${m.image_path}" style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: ${m.message ? '0.5rem' : '0'};">` : ''}
+                    ${m.image_path ? `<img src="${m.image_path.startsWith('data:') ? m.image_path : '/storage/' + m.image_path}" style="max-width: 100%; max-height: 300px; border-radius: 12px; margin-bottom: ${m.message ? '0.5rem' : '0'};">` : ''}
                     ${m.message ? `<div style="padding: 0.75rem 1rem; border-radius: 16px; background: ${m.is_mine ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.1)'};">${m.message}</div>` : ''}
                     <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
                         <span>${m.created_at}</span>
@@ -473,25 +473,118 @@ function unsendMessage(messageId) {
     .then(() => loadMessages());
 }
 
-// Send message
-document.getElementById('message-form').addEventListener('submit', function(e) {
+// Send message with loading state
+let isMessageSending = false;
+
+document.getElementById('message-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const formData = new FormData(this);
     
-    fetch('{{ route("chat.send") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
+    // Prevent double send
+    if (isMessageSending) {
+        alert('⏳ Please wait, message is still sending...');
+        return;
+    }
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    const messageInput = this.querySelector('input[name="message"]');
+    
+    submitBtn.innerHTML = '⏳ Sending...';
+    submitBtn.disabled = true;
+    messageInput.disabled = true;
+    isMessageSending = true;
+    
+    try {
+        const formData = new FormData(this);
+        const imageInput = this.querySelector('input[name="image"]');
+        
+        // Compress image if exists and > 200KB
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            const originalFile = imageInput.files[0];
+            if (originalFile.size > 200 * 1024) {
+                submitBtn.innerHTML = '⏳ Compressing...';
+                const compressedFile = await compressImageForChat(originalFile, 200);
+                formData.set('image', compressedFile);
+            }
+        }
+        
+        submitBtn.innerHTML = '⏳ Sending...';
+        
+        const response = await fetch('{{ route("chat.send") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
             this.reset();
             removeImagePreview();
             loadMessages();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to send message'));
         }
-    });
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+        messageInput.disabled = false;
+        isMessageSending = false;
+    }
 });
+
+// Compress image for chat (shared function)
+async function compressImageForChat(file, maxSizeKB = 200) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                const maxDimension = 1000;
+                if (width > maxDimension || height > maxDimension) {
+                    const ratio = Math.min(maxDimension / width, maxDimension / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                let quality = 0.7;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                
+                while (dataUrl.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
+                
+                const byteString = atob(dataUrl.split(',')[1]);
+                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+                const compressedFile = new File([blob], file.name, { type: mimeString });
+                
+                console.log(`📷 Chat compressed: ${(file.size/1024).toFixed(1)}KB → ${(compressedFile.size/1024).toFixed(1)}KB`);
+                resolve(compressedFile);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 // Image preview
 function previewImage(input) {

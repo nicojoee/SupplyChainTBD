@@ -159,51 +159,61 @@ class ChatController extends Controller
 
     public function sendMessage(Request $request)
     {
-        $request->validate([
-            'conversation_id' => 'required|exists:conversations,id',
-            'message' => 'nullable|string|max:5000',
-            'image' => 'nullable|image|max:5120',
-        ]);
+        try {
+            $request->validate([
+                'conversation_id' => 'required|exists:conversations,id',
+                'message' => 'nullable|string|max:5000',
+                'image' => 'nullable|image|max:5120',
+            ]);
 
-        $user = auth()->user();
-        $conversation = Conversation::findOrFail($request->conversation_id);
+            $user = auth()->user();
+            $conversation = Conversation::findOrFail($request->conversation_id);
 
-        // Verify user is part of conversation
-        if ($conversation->user_one != $user->id && $conversation->user_two != $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            // Verify user is part of conversation
+            if ($conversation->user_one != $user->id && $conversation->user_two != $user->id) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            if (!$request->message && !$request->hasFile('image')) {
+                return response()->json(['error' => 'Message or image is required'], 400);
+            }
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                // Convert to Base64 for Vercel serverless (no persistent filesystem)
+                $file = $request->file('image');
+                $imageData = base64_encode(file_get_contents($file->getRealPath()));
+                $mimeType = $file->getMimeType();
+                $imagePath = 'data:' . $mimeType . ';base64,' . $imageData;
+            }
+
+            $message = Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $user->id,
+                'message' => $request->message,
+                'image_path' => $imagePath,
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => [
+                    'id' => $message->id,
+                    'message' => $message->message,
+                    'image_path' => $message->image_path,
+                    'is_mine' => true,
+                    'sender_name' => $user->name,
+                    'sender_avatar' => $user->avatar,
+                    'created_at' => $message->created_at->format('M d, H:i'),
+                    'can_unsend' => true,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to send message: ' . $e->getMessage()
+            ], 500);
         }
-
-        if (!$request->message && !$request->hasFile('image')) {
-            return response()->json(['error' => 'Message or image is required'], 400);
-        }
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('chat_images', 'public');
-        }
-
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'message' => $request->message,
-            'image_path' => $imagePath,
-        ]);
-
-        $conversation->update(['last_message_at' => now()]);
-
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'id' => $message->id,
-                'message' => $message->message,
-                'image_path' => $message->image_path,
-                'is_mine' => true,
-                'sender_name' => $user->name,
-                'sender_avatar' => $user->avatar,
-                'created_at' => $message->created_at->format('M d, H:i'),
-                'can_unsend' => true,
-            ],
-        ]);
     }
 
     public function unsendMessage($messageId)
