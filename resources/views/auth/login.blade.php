@@ -165,7 +165,7 @@
 
                 <!-- Footer Contacts -->
                 <div class="w-full mt-12 pt-8 border-t border-slate-100">
-                    <h4 class="font-outfit text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Contact Superadmin</h4>
+                    <h4 class="font-outfit text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Contact Superadmin for New Access</h4>
                     
                     <div class="space-y-2">
                         <!-- Contact Item -->

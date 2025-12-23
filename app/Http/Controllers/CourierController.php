@@ -335,7 +335,7 @@ class CourierController extends Controller
         $order->update([
             'courier_id' => null,
             'courier_accepted_at' => null,
-            'status' => 'pickup', // Return to pickup status so other couriers can accept
+            'status' => 'confirmed', // Return to confirmed status so seller can request another courier
         ]);
 
         // Check if courier has other active orders
