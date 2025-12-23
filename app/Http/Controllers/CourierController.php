@@ -118,7 +118,9 @@ class CourierController extends Controller
             'name' => 'required|string|max:255',
             'vehicle_type' => 'required|string|in:small_15,medium_20,large_30',
             'license_plate' => 'nullable|string|max:20',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|string|regex:/^[0-9]{10,13}$/',
+        ], [
+            'phone.regex' => 'Nomor telepon harus 10-13 digit angka.',
         ]);
 
         // Parse vehicle type to get capacity
@@ -133,13 +135,16 @@ class CourierController extends Controller
             'large_30' => 30,
         ];
 
+        // Prepend +62 to phone number
+        $phone = '+62' . preg_replace('/^0+/', '', $request->phone);
+
         Courier::create([
             'user_id' => auth()->id(),
             'name' => $request->name,
             'vehicle_type' => $vehicleLabels[$request->vehicle_type] ?? $request->vehicle_type,
             'vehicle_capacity' => $capacities[$request->vehicle_type] ?? 15,
             'license_plate' => $request->license_plate,
-            'phone' => $request->phone,
+            'phone' => $phone,
             'status' => 'idle',
         ]);
 
@@ -454,7 +459,9 @@ class CourierController extends Controller
             'name' => 'required|string|max:255',
             'vehicle_type' => 'required|string|in:small_15,medium_20,large_30',
             'license_plate' => 'nullable|string|max:20',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|string|regex:/^[0-9]{10,13}$/',
+        ], [
+            'phone.regex' => 'Nomor telepon harus 10-13 digit angka.',
         ]);
 
         $courier = auth()->user()->courier;
@@ -475,12 +482,15 @@ class CourierController extends Controller
             'large_30' => 30,
         ];
 
+        // Prepend +62 to phone number
+        $phone = '+62' . preg_replace('/^0+/', '', $request->phone);
+
         $courier->update([
             'name' => $request->name,
             'vehicle_type' => $vehicleLabels[$request->vehicle_type] ?? $request->vehicle_type,
             'vehicle_capacity' => $capacities[$request->vehicle_type] ?? 15,
             'license_plate' => $request->license_plate,
-            'phone' => $request->phone,
+            'phone' => $phone,
         ]);
 
         return back()->with('success', 'Vehicle profile updated successfully.');

@@ -34,9 +34,19 @@
                        value="{{ old('license_plate', $courier->license_plate) }}" placeholder="B 1234 XYZ">
             </div>
             <div class="form-group">
-                <label class="form-label">Phone Number *</label>
-                <input type="text" name="phone" class="form-control" required
-                       value="{{ old('phone', $courier->phone) }}" placeholder="+62...">
+                <label class="form-label">Phone Number * (Indonesia)</label>
+                <div style="display: flex; align-items: center; gap: 0;">
+                    <span style="background: rgba(99, 102, 241, 0.3); padding: 0.75rem 1rem; border-radius: 10px 0 0 10px; border: 1px solid rgba(255,255,255,0.1); border-right: none; font-weight: 600;">+62</span>
+                    <input type="text" name="phone" class="form-control" required
+                           pattern="[0-9]{10,13}" minlength="10" maxlength="13"
+                           value="{{ old('phone', preg_replace('/^\+62/', '', $courier->phone)) }}"
+                           placeholder="8123456789"
+                           style="border-radius: 0 10px 10px 0;"
+                           title="Masukkan 10-13 digit nomor telepon (tanpa 0 di depan)">
+                </div>
+                <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem;">
+                    Contoh: 8123456789 (tanpa 0 di depan, minimal 10 digit)
+                </div>
             </div>
         </div>
         <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">
