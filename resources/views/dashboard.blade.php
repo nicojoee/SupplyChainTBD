@@ -1497,51 +1497,58 @@
     function createEditBanner() {
         if (editBannerElement) return;
         
+        // Get map container
+        const mapContainer = document.getElementById('map');
+        
         editBannerElement = document.createElement('div');
         editBannerElement.id = 'edit-mode-banner';
         editBannerElement.style.cssText = `
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95));
             color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 10000;
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            z-index: 1000;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             font-family: system-ui, sans-serif;
+            font-size: 0.85rem;
+            backdrop-filter: blur(8px);
+            max-width: 320px;
         `;
-        document.body.appendChild(editBannerElement);
+        mapContainer.style.position = 'relative';
+        mapContainer.appendChild(editBannerElement);
     }
 
     function showEditBanner(entityName) {
         createEditBanner();
+        // Truncate long entity names
+        const displayName = entityName.length > 20 ? entityName.substring(0, 20) + '...' : entityName;
         editBannerElement.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.2rem;">📍</span>
-                <div>
-                    <div style="font-weight: 600;">Edit Mode Active</div>
-                    <div style="font-size: 0.85rem; opacity: 0.9;">Click on map to set new location for "${entityName}"</div>
+            <div style="display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;">
+                <span style="font-size: 1rem;">📍</span>
+                <div style="min-width: 0;">
+                    <div style="font-weight: 600; font-size: 0.8rem;">Edit Mode</div>
+                    <div style="font-size: 0.75rem; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Click map for "${displayName}"</div>
                 </div>
             </div>
             <button onclick="cancelEditMode()" style="
-                background: rgba(255,255,255,0.2);
-                border: 1px solid rgba(255,255,255,0.4);
+                background: rgba(255,255,255,0.25);
+                border: none;
                 color: white;
-                padding: 8px 16px;
-                border-radius: 8px;
+                padding: 6px 10px;
+                border-radius: 6px;
                 cursor: pointer;
                 font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 6px;
+                font-size: 0.75rem;
+                white-space: nowrap;
                 transition: background 0.2s;
-            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                ❌ Cancel
+            " onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.25)'">
+                ✕ Cancel
             </button>
         `;
         editBannerElement.style.display = 'flex';
@@ -1632,7 +1639,7 @@
     function confirmNewPosition(lat, lng) {
         if (!editingEntity) return;
         
-        const { type, id, name } = editingEntity;
+        const { type, id, name, currentLat, currentLng } = editingEntity;
         const plural = getEntityPlural(type);
         
         // Show confirmation
@@ -1663,8 +1670,32 @@
         })
         .then(data => {
             if (data.success) {
-                alert('✅ Position updated successfully!');
-                location.reload();
+                // Update marker position without reload
+                const markerKey = `${type}-${id}`;
+                const existingMarker = allMarkers[markerKey];
+                
+                if (existingMarker) {
+                    // Update marker position
+                    existingMarker.setLatLng([lat, lng]);
+                    
+                    // Get current popup content and update coordinates
+                    const popup = existingMarker.getPopup();
+                    if (popup) {
+                        let content = popup.getContent();
+                        // Update coordinates in popup using regex
+                        content = content.replace(
+                            /📍 Lat: [\d.-]+, Lng: [\d.-]+/,
+                            `📍 Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
+                        );
+                        popup.setContent(content);
+                    }
+                    
+                    // Pan to new location
+                    map.panTo([lat, lng]);
+                }
+                
+                // Show success toast notification
+                showSuccessToast(`✅ Position updated for "${name}"`);
             } else {
                 alert('Error: ' + (data.message || 'Failed to update position'));
             }
@@ -1676,6 +1707,51 @@
         .finally(() => {
             cancelEditMode();
         });
+    }
+
+    // Toast notification for success messages
+    function showSuccessToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            font-family: system-ui, sans-serif;
+            font-weight: 500;
+            animation: slideUp 0.3s ease-out;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Add animation CSS
+        if (!document.getElementById('toast-styles')) {
+            const style = document.createElement('style');
+            style.id = 'toast-styles';
+            style.textContent = `
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+                    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                }
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     // Click marker for adding new entities
