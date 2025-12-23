@@ -143,5 +143,6 @@ Route::middleware(['auth'])->group(function () {
         // Available deliveries for courier to accept
         Route::get('/available-deliveries', [CourierController::class, 'availableDeliveries'])->name('available-deliveries');
         Route::post('/accept/{order}', [CourierController::class, 'acceptDelivery'])->name('accept');
+        Route::post('/cancel/{order}', [CourierController::class, 'cancelDelivery'])->name('cancel');
     });
 });

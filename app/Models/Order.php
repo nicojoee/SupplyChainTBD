@@ -18,11 +18,13 @@ class Order extends Model
         'status',
         'total_amount',
         'courier_id',
+        'courier_accepted_at',
         'notes',
     ];
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'courier_accepted_at' => 'datetime',
     ];
 
     public function items()

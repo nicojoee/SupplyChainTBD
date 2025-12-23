@@ -293,16 +293,61 @@ class CourierController extends Controller
             return back()->with('error', 'This delivery is no longer available.');
         }
 
-        // Assign courier to order
+        // Assign courier to order with acceptance timestamp
         $order->update([
             'courier_id' => $courier->id,
+            'courier_accepted_at' => now(),
             'status' => 'processing',
         ]);
 
         // Update courier status
         $courier->update(['status' => 'busy']);
 
-        return redirect()->route('courier.index')->with('success', 'Delivery accepted successfully!');
+        return redirect()->route('courier.index')->with('success', 'Delivery accepted successfully! You can cancel within 5 minutes if needed.');
+    }
+
+    // Cancel a delivery (only within 5 minutes of accepting)
+    public function cancelDelivery(Order $order)
+    {
+        $user = auth()->user();
+        $courier = $user->courier;
+
+        if (!$courier) {
+            return back()->with('error', 'Courier profile not found.');
+        }
+
+        // Check if order belongs to this courier
+        if ($order->courier_id !== $courier->id) {
+            return back()->with('error', 'You are not assigned to this delivery.');
+        }
+
+        // Check if within 5 minute window
+        if (!$order->courier_accepted_at) {
+            return back()->with('error', 'Cannot determine acceptance time for this order.');
+        }
+
+        $minutesSinceAcceptance = now()->diffInMinutes($order->courier_accepted_at);
+        if ($minutesSinceAcceptance > 5) {
+            return back()->with('error', 'Cancellation window has expired. You can only cancel within 5 minutes of accepting.');
+        }
+
+        // Remove courier from order and reset status
+        $order->update([
+            'courier_id' => null,
+            'courier_accepted_at' => null,
+            'status' => 'pickup', // Return to pickup status so other couriers can accept
+        ]);
+
+        // Check if courier has other active orders
+        $hasActiveOrders = Order::where('courier_id', $courier->id)
+            ->whereIn('status', ['processing', 'shipped'])
+            ->exists();
+
+        if (!$hasActiveOrders) {
+            $courier->update(['status' => 'idle']);
+        }
+
+        return redirect()->route('courier.index')->with('success', 'Delivery cancelled successfully. The order is now available for other couriers.');
     }
 
     // Calculate distance between two coordinates (Haversine formula)
