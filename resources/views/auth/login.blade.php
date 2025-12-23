@@ -7,30 +7,36 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Load Tailwind CSS -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    <style>
-        /* Custom animations that might be tricky with just ready-made Tailwind utils */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
+    <!-- Tailwind CSS (CDN for guaranteed rendering without build step) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Plus Jakarta Sans', 'sans-serif'],
+                        'outfit': ['Outfit', 'sans-serif'],
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        drift: {
+                            '0%': { transform: 'translate(0, 0)' },
+                            '100%': { transform: 'translate(20px, 20px)' },
+                        }
+                    },
+                    animation: {
+                        float: 'float 6s ease-in-out infinite',
+                        drift: 'drift 10s ease-in-out infinite alternate',
+                    }
+                }
+            }
         }
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        @keyframes drift {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(20px, 20px); }
-        }
-        .animate-drift {
-            animation: drift 10s ease-in-out infinite alternate;
-        }
-    </style>
+    </script>
 </head>
-<body class="font-['Plus_Jakarta_Sans'] bg-slate-50 text-slate-900 min-h-screen flex selection:bg-blue-500 selection:text-white">
+<body class="font-sans bg-slate-50 text-slate-900 min-h-screen flex selection:bg-blue-500 selection:text-white">
 
     <div class="flex w-full min-h-screen shadow-2xl overflow-hidden">
         
@@ -56,7 +62,7 @@
                     System Operational
                 </div>
 
-                <h1 class="font-['Outfit'] text-5xl md:text-6xl font-bold leading-tight mb-8 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-slate-400">
+                <h1 class="font-outfit text-5xl md:text-6xl font-bold leading-tight mb-8 text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-slate-400">
                     Supply Chain <br>Intelligence
                 </h1>
 
@@ -67,7 +73,7 @@
                             🌐
                         </div>
                         <div>
-                            <h3 class="font-['Outfit'] text-lg font-semibold text-white mb-1">Real-time Tracking</h3>
+                            <h3 class="font-outfit text-lg font-semibold text-white mb-1">Real-time Tracking</h3>
                             <p class="text-slate-400 text-sm leading-relaxed">
                                 Monitor your fleet and shipments globally with precision GPS and live telemetry.
                             </p>
@@ -80,7 +86,7 @@
                             🏭
                         </div>
                         <div>
-                            <h3 class="font-['Outfit'] text-lg font-semibold text-white mb-1">Integrated Ecosystem</h3>
+                            <h3 class="font-outfit text-lg font-semibold text-white mb-1">Integrated Ecosystem</h3>
                             <p class="text-slate-400 text-sm leading-relaxed">
                                 Unified workflow connecting Suppliers, Factories, and Distributors in one platform.
                             </p>
@@ -93,7 +99,7 @@
                             🔐
                         </div>
                         <div>
-                            <h3 class="font-['Outfit'] text-lg font-semibold text-white mb-1">Secure Access</h3>
+                            <h3 class="font-outfit text-lg font-semibold text-white mb-1">Secure Access</h3>
                             <p class="text-slate-400 text-sm leading-relaxed">
                                 Enterprise-grade security with role-based verification for every stakeholder.
                             </p>
@@ -117,7 +123,7 @@
                 <!-- Mobile Header (Visible only on small screens) -->
                 <div class="lg:hidden text-center mb-10">
                      <div class="inline-block text-5xl mb-4 animate-float">📦</div>
-                     <h1 class="font-['Outfit'] text-3xl font-bold text-slate-900">Supply Chain Portal</h1>
+                     <h1 class="font-outfit text-3xl font-bold text-slate-900">Supply Chain Portal</h1>
                 </div>
 
                 <!-- Desktop Logo (Hidden on mobile to save space or layout differently) -->
@@ -126,7 +132,7 @@
                 </div>
 
                 <div class="w-full text-center space-y-2 mb-10">
-                    <h2 class="font-['Outfit'] text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
+                    <h2 class="font-outfit text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
                     <p class="text-slate-500 text-sm font-medium">Seamlessly manage your logistics network.</p>
                 </div>
 
@@ -140,7 +146,7 @@
 
                 <!-- Google Button -->
                 <a href="{{ route('auth.google') }}" 
-                   class="group w-full relative flex items-center justify-center gap-3 px-6 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 font-['Outfit'] font-semibold transition-all duration-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 active:translate-y-0 text-base">
+                   class="group w-full relative flex items-center justify-center gap-3 px-6 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 font-outfit font-semibold transition-all duration-300 hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-0.5 active:translate-y-0 text-base">
                     
                     <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -159,7 +165,7 @@
 
                 <!-- Footer Contacts -->
                 <div class="w-full mt-12 pt-8 border-t border-slate-100">
-                    <h4 class="font-['Outfit'] text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Contact Superadmin</h4>
+                    <h4 class="font-outfit text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-4">Contact Superadmin</h4>
                     
                     <div class="space-y-2">
                         <!-- Contact Item -->
@@ -192,7 +198,7 @@
 
                 <!-- Academic Footer -->
                 <div class="mt-12 text-center">
-                    <div class="font-['Outfit'] font-bold text-slate-700 text-sm">Department of Mathematics ITS</div>
+                    <div class="font-outfit font-bold text-slate-700 text-sm">Department of Mathematics ITS</div>
                     <div class="text-blue-600 font-medium text-xs mt-1">Group 6 : Database Technology</div>
                     <div class="text-slate-400 text-xs mt-2 font-mono">Surabaya 2025</div>
                 </div>
