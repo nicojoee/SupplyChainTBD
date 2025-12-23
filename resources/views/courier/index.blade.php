@@ -21,6 +21,10 @@
                 <div>{{ $courier->vehicle_type ?? 'N/A' }} • {{ $courier->license_plate ?? 'N/A' }}</div>
             </div>
             <div>
+                <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 0.25rem;">Capacity</div>
+                <div style="color: #22c55e; font-weight: 600;">{{ $courier->vehicle_capacity ?? 'N/A' }} Ton / Trip</div>
+            </div>
+            <div>
                 <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem; margin-bottom: 0.25rem;">Phone</div>
                 <div>{{ $courier->phone ?? 'N/A' }}</div>
             </div>
@@ -49,6 +53,12 @@
     @if($availableOrders->count() > 0)
         <div style="padding: 1rem; display: grid; gap: 0.75rem;">
             @foreach($availableOrders as $order)
+            @php
+                $totalQty = $order->total_quantity;
+                $remainingQty = $order->getRemainingQuantity();
+                $courierCapacity = $courier->vehicle_capacity ?? 15;
+                $willCarry = min($courierCapacity, $remainingQty);
+            @endphp
             <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
@@ -61,12 +71,23 @@
                         <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;">
                             From: {{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}
                         </div>
+                        @if($totalQty > 0)
+                        <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 6px; font-size: 0.85rem;">
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                                <span>📦 Total: <strong>{{ number_format($totalQty, 1) }} ton</strong></span>
+                                @if($remainingQty < $totalQty)
+                                    <span style="color: #f59e0b;">⏳ Remaining: <strong>{{ number_format($remainingQty, 1) }} ton</strong></span>
+                                @endif
+                                <span style="color: #22c55e;">🚛 You'll carry: <strong>{{ number_format($willCarry, 1) }} ton</strong></span>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                     <div style="text-align: right;">
                         <div style="font-weight: 600; color: #22c55e;">{{ formatRupiah($order->total_amount) }}</div>
                         <button type="button" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; margin-top: 0.5rem;"
-                                onclick="showAcceptConfirmation('{{ $order->order_number }}', '{{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}', '{{ $order->sellerSupplier->address ?? $order->sellerFactory->address ?? '' }}', '{{ number_format($order->total_amount, 2) }}', {{ $order->id }})">
-                            ✓ Accept Delivery
+                                onclick="showAcceptConfirmation('{{ $order->order_number }}', '{{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}', '{{ $order->sellerSupplier->address ?? $order->sellerFactory->address ?? '' }}', '{{ number_format($order->total_amount, 2) }}', {{ $order->id }}, {{ $willCarry }}, {{ $remainingQty }})">
+                            ✓ Accept {{ number_format($willCarry, 1) }} ton
                         </button>
                     </div>
                 </div>
@@ -203,14 +224,21 @@
                 <span style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Address:</span>
                 <div id="acceptSellerAddress" style="font-size: 0.9rem;"></div>
             </div>
-            <div>
+            <div style="margin-bottom: 0.75rem;">
                 <span style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">Order Value:</span>
                 <div id="acceptAmount" style="font-weight: 600; color: #22c55e; font-size: 1.1rem;"></div>
+            </div>
+            <div style="padding: 0.75rem; background: rgba(34, 197, 94, 0.15); border-radius: 8px; border: 1px solid rgba(34, 197, 94, 0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: rgba(255,255,255,0.7);">📦 You will carry:</span>
+                    <strong id="acceptQuantity" style="color: #22c55e; font-size: 1.1rem;"></strong>
+                </div>
+                <div id="acceptRemainingInfo" style="font-size: 0.85rem; color: #f59e0b; margin-top: 0.5rem;"></div>
             </div>
         </div>
         <div style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 1.5rem;">
             <p style="font-size: 0.85rem; color: #fcd34d; margin: 0;">
-                ⚠️ <strong>Important:</strong> After accepting, you have <strong>5 minutes</strong> to cancel if needed. After that, the delivery must be completed.
+                ⚠️ <strong>Important:</strong> After accepting, you have <strong>5 minutes</strong> to cancel if needed.
             </p>
         </div>
         <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
@@ -255,11 +283,21 @@
 
 <script>
 // Accept Delivery Modal Functions
-function showAcceptConfirmation(orderNumber, sellerName, sellerAddress, amount, orderId) {
+function showAcceptConfirmation(orderNumber, sellerName, sellerAddress, amount, orderId, willCarry, remainingQty) {
     document.getElementById('acceptOrderNumber').textContent = orderNumber;
     document.getElementById('acceptSellerName').textContent = sellerName;
     document.getElementById('acceptSellerAddress').textContent = sellerAddress || 'Address not available';
-    document.getElementById('acceptAmount').textContent = '$' + amount;
+    document.getElementById('acceptAmount').textContent = 'Rp ' + amount;
+    document.getElementById('acceptQuantity').textContent = willCarry.toFixed(1) + ' ton';
+    
+    const remainingInfo = document.getElementById('acceptRemainingInfo');
+    if (remainingQty > willCarry) {
+        remainingInfo.textContent = '⏳ After you pickup, ' + (remainingQty - willCarry).toFixed(1) + ' ton will remain for other couriers.';
+        remainingInfo.style.display = 'block';
+    } else {
+        remainingInfo.style.display = 'none';
+    }
+    
     document.getElementById('acceptForm').action = '/courier/accept/' + orderId;
     document.getElementById('acceptModal').style.display = 'flex';
 }

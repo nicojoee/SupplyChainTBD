@@ -116,15 +116,28 @@ class CourierController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'vehicle_type' => 'nullable|string|max:100',
+            'vehicle_type' => 'required|string|in:small_15,medium_20,large_30',
             'license_plate' => 'nullable|string|max:20',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'required|string|max:20',
         ]);
+
+        // Parse vehicle type to get capacity
+        $vehicleLabels = [
+            'small_15' => 'Small Truck - 15 Ton',
+            'medium_20' => 'Medium Truck - 20 Ton',
+            'large_30' => 'Large Truck - 30 Ton',
+        ];
+        $capacities = [
+            'small_15' => 15,
+            'medium_20' => 20,
+            'large_30' => 30,
+        ];
 
         Courier::create([
             'user_id' => auth()->id(),
             'name' => $request->name,
-            'vehicle_type' => $request->vehicle_type,
+            'vehicle_type' => $vehicleLabels[$request->vehicle_type] ?? $request->vehicle_type,
+            'vehicle_capacity' => $capacities[$request->vehicle_type] ?? 15,
             'license_plate' => $request->license_plate,
             'phone' => $request->phone,
             'status' => 'idle',
@@ -278,7 +291,7 @@ class CourierController extends Controller
         ]);
     }
 
-    // Accept a delivery
+    // Accept a delivery (with split delivery support)
     public function acceptDelivery(Order $order)
     {
         $user = auth()->user();
@@ -288,22 +301,61 @@ class CourierController extends Controller
             return back()->with('error', 'Courier profile not found.');
         }
 
-        // Check if order is available
-        if ($order->courier_id !== null || !in_array($order->status, ['pickup', 'confirmed'])) {
+        // Check courier has capacity defined
+        if (!$courier->vehicle_capacity) {
+            return back()->with('error', 'Please update your vehicle capacity in your profile.');
+        }
+
+        // Get remaining quantity to deliver
+        $remainingQty = $order->getRemainingQuantity();
+        if ($remainingQty <= 0) {
+            return back()->with('error', 'This order has been fully delivered.');
+        }
+
+        // Check if order is available for pickup
+        if (!in_array($order->status, ['pickup', 'confirmed'])) {
             return back()->with('error', 'This delivery is no longer available.');
         }
 
-        // Assign courier to order with acceptance timestamp
-        $order->update([
-            'courier_id' => $courier->id,
-            'courier_accepted_at' => now(),
-            'status' => 'processing',
-        ]);
+        // Calculate how much this courier can carry
+        $courierCapacity = $courier->vehicle_capacity;
+        $quantityToCarry = min($courierCapacity, $remainingQty);
+
+        // Update delivered quantity
+        $newDeliveredQty = $order->delivered_quantity + $quantityToCarry;
+
+        // Determine if this completes the order or leaves remainder
+        if ($newDeliveredQty >= $order->total_quantity) {
+            // This courier completes the delivery
+            $order->update([
+                'courier_id' => $courier->id,
+                'courier_accepted_at' => now(),
+                'delivered_quantity' => $order->total_quantity,
+                'status' => 'processing',
+            ]);
+            $message = "Delivery fully accepted! Carrying {$quantityToCarry} ton.";
+        } else {
+            // Partial delivery - this courier takes what they can
+            // Keep order available for other couriers
+            $order->update([
+                'delivered_quantity' => $newDeliveredQty,
+                // Don't set courier_id so order stays available
+                // Don't change status
+            ]);
+            
+            // Record this courier's partial pickup in notes
+            $note = $order->notes ?? '';
+            $note .= "\n[" . now()->format('Y-m-d H:i') . "] Courier {$courier->name} took {$quantityToCarry} ton.";
+            $order->update(['notes' => trim($note)]);
+            
+            $remaining = $order->total_quantity - $newDeliveredQty;
+            $message = "Accepted {$quantityToCarry} ton (your truck capacity). Remaining {$remaining} ton still needs pickup by another courier.";
+        }
 
         // Update courier status
         $courier->update(['status' => 'busy']);
 
-        return redirect()->route('courier.index')->with('success', 'Delivery accepted successfully! You can cancel within 5 minutes if needed.');
+        return redirect()->route('courier.index')->with('success', $message);
     }
 
     // Cancel a delivery (only within 5 minutes of accepting)

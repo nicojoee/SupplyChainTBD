@@ -13,6 +13,7 @@ class Courier extends Model
         'user_id',
         'name',
         'vehicle_type',
+        'vehicle_capacity',
         'license_plate',
         'phone',
         'current_latitude',
@@ -27,7 +28,17 @@ class Courier extends Model
         'current_longitude' => 'decimal:8',
         'is_gps_active' => 'boolean',
         'location_updated_at' => 'datetime',
+        'vehicle_capacity' => 'integer',
     ];
+
+    // Get capacity display label
+    public function getCapacityLabel(): string
+    {
+        if (!$this->vehicle_capacity) {
+            return 'Unknown';
+        }
+        return $this->vehicle_capacity . ' Ton';
+    }
 
     // Check if location is expired (more than 4 hours old)
     public function isLocationExpired(): bool

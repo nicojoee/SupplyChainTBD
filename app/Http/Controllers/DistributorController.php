@@ -75,6 +75,7 @@ class DistributorController extends Controller
             'seller_id' => $factoryProduct->factory_id,
             'status' => 'pending',
             'total_amount' => $factoryProduct->price * $request->quantity,
+            'total_quantity' => $request->quantity,
         ]);
 
         OrderItem::create([
@@ -110,6 +111,12 @@ class DistributorController extends Controller
             $totalAmount += $item['quantity'] * $item['price'];
         }
 
+        // Calculate total quantity
+        $totalQuantity = 0;
+        foreach ($request->items as $item) {
+            $totalQuantity += $item['quantity'];
+        }
+
         // Create order with status 'pending' - waiting for factory confirmation
         $order = Order::create([
             'order_number' => Order::generateOrderNumber(),
@@ -119,6 +126,7 @@ class DistributorController extends Controller
             'seller_id' => $request->seller_id,
             'status' => 'pending',
             'total_amount' => $totalAmount,
+            'total_quantity' => $totalQuantity,
         ]);
 
         // Create order items

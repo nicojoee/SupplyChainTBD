@@ -17,6 +17,8 @@ class Order extends Model
         'seller_id',
         'status',
         'total_amount',
+        'total_quantity',
+        'delivered_quantity',
         'courier_id',
         'courier_accepted_at',
         'notes',
@@ -24,8 +26,22 @@ class Order extends Model
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'total_quantity' => 'decimal:2',
+        'delivered_quantity' => 'decimal:2',
         'courier_accepted_at' => 'datetime',
     ];
+
+    // Get remaining quantity to be delivered
+    public function getRemainingQuantity(): float
+    {
+        return max(0, $this->total_quantity - $this->delivered_quantity);
+    }
+
+    // Check if order is fully delivered
+    public function isFullyDelivered(): bool
+    {
+        return $this->delivered_quantity >= $this->total_quantity;
+    }
 
     public function items()
     {
