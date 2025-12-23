@@ -219,6 +219,11 @@ class SuperAdminController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        // Prevent deleting superadmin accounts
+        if ($user->role === 'superadmin') {
+            return back()->with('error', 'Cannot delete superadmin accounts.');
+        }
+
         $userName = $user->name;
 
         // Clean up entity profiles

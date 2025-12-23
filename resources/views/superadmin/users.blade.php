@@ -105,7 +105,7 @@
                         </form>
                         @endif
                         
-                        @if($user->id !== auth()->id())
+                        @if($user->id !== auth()->id() && $user->role !== 'superadmin')
                         <form action="{{ route('superadmin.users.delete', $user) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this account?\\n\\nUser: {{ $user->name }}\\nEmail: {{ $user->email }}\\n\\nThis action cannot be undone!');">
                             @csrf
                             @method('DELETE')
