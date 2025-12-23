@@ -717,6 +717,144 @@
         return (R * c).toFixed(1);
     }
 
+    // ==========================================
+    // COURIER ROUTING FUNCTIONS
+    // ==========================================
+    let currentRouteLayer = null;
+    let routeMarkers = [];
+
+    // Generate Google Maps navigation URL
+    function getGoogleMapsUrl(destLat, destLng, originLat = null, originLng = null) {
+        if (originLat && originLng) {
+            return `https://www.google.com/maps/dir/${originLat},${originLng}/${destLat},${destLng}`;
+        }
+        return `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
+    }
+
+    // Clear existing route from map
+    function clearRoute() {
+        if (currentRouteLayer) {
+            map.removeLayer(currentRouteLayer);
+            currentRouteLayer = null;
+        }
+        routeMarkers.forEach(m => map.removeLayer(m));
+        routeMarkers = [];
+    }
+
+    // Draw route using OSRM (Open Source Routing Machine)
+    async function drawRoute(originLat, originLng, destLat, destLng, destName = 'Destination') {
+        clearRoute();
+        
+        // Show loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.id = 'route-loading';
+        loadingDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30, 27, 75, 0.95); padding: 20px 30px; border-radius: 12px; z-index: 10000; color: white;';
+        loadingDiv.innerHTML = '⏳ Calculating route...';
+        document.body.appendChild(loadingDiv);
+        
+        try {
+            // Call OSRM public API
+            const url = `https://router.project-osrm.org/route/v1/driving/${originLng},${originLat};${destLng},${destLat}?overview=full&geometries=geojson`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+                throw new Error('No route found');
+            }
+            
+            const route = data.routes[0];
+            const coordinates = route.geometry.coordinates.map(c => [c[1], c[0]]); // Convert [lng,lat] to [lat,lng]
+            const durationMinutes = Math.round(route.duration / 60);
+            const distanceKm = (route.distance / 1000).toFixed(1);
+            
+            // Draw the route polyline
+            currentRouteLayer = L.polyline(coordinates, {
+                color: '#3b82f6',
+                weight: 5,
+                opacity: 0.8,
+                dashArray: null
+            }).addTo(map);
+            
+            // Add destination marker with route info
+            const destMarker = L.marker([destLat, destLng], {
+                icon: L.divIcon({
+                    className: 'route-dest-marker',
+                    html: '<div style="background: #ef4444; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.4);">📍</div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                })
+            }).addTo(map);
+            
+            destMarker.bindPopup(`
+                <div style="text-align: center; min-width: 200px;">
+                    <div style="font-weight: 600; margin-bottom: 8px;">📍 ${destName}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Distance</div>
+                            <div style="font-weight: 600; color: #3b82f6;">${distanceKm} km</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 8px;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">Est. Time</div>
+                            <div style="font-weight: 600; color: #22c55e;">${durationMinutes} min</div>
+                        </div>
+                    </div>
+                    <a href="${getGoogleMapsUrl(destLat, destLng, originLat, originLng)}" target="_blank" 
+                       style="display: block; background: linear-gradient(135deg, #4285F4, #34A853); color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        🗺️ Buka di Google Maps
+                    </a>
+                    <button onclick="clearRoute()" 
+                            style="margin-top: 8px; width: 100%; padding: 8px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                        ✕ Tutup Rute
+                    </button>
+                </div>
+            `).openPopup();
+            
+            routeMarkers.push(destMarker);
+            
+            // Fit map to show entire route
+            map.fitBounds(currentRouteLayer.getBounds().pad(0.1));
+            
+            console.log(`📍 Route drawn: ${distanceKm}km, ${durationMinutes}min`);
+            
+        } catch (error) {
+            console.error('Routing error:', error);
+            alert('Gagal menghitung rute. Silakan coba Google Maps:\n' + getGoogleMapsUrl(destLat, destLng));
+        } finally {
+            const loader = document.getElementById('route-loading');
+            if (loader) loader.remove();
+        }
+    }
+
+    // Navigate to a location (called from popup buttons)
+    window.navigateTo = function(destLat, destLng, destName) {
+        // Get courier's current position from GPS or selfEntity
+        let originLat = null, originLng = null;
+        
+        @if(auth()->user()->role === 'courier')
+        // Try to get from GPS first
+        if (myLocationMarker) {
+            const pos = myLocationMarker.getLatLng();
+            originLat = pos.lat;
+            originLng = pos.lng;
+        } else if (selfEntity && selfEntity.latitude && selfEntity.longitude) {
+            originLat = selfEntity.latitude;
+            originLng = selfEntity.longitude;
+        }
+        @endif
+        
+        if (originLat && originLng) {
+            drawRoute(originLat, originLng, destLat, destLng, destName);
+        } else {
+            // No GPS, open Google Maps directly
+            window.open(getGoogleMapsUrl(destLat, destLng), '_blank');
+        }
+    };
+
+    // Open Google Maps directly
+    window.openGoogleMaps = function(destLat, destLng) {
+        window.open(getGoogleMapsUrl(destLat, destLng), '_blank');
+    };
+
     // Self entity data from server
     const selfEntity = @json($selfEntity);
 
@@ -1023,6 +1161,33 @@
                                 style="width: 100%; padding: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                                 🛒 Buy Products
                             </button>
+                        </div>
+                    `;
+                }
+                @endif
+
+                // Courier viewing Supplier/Factory markers - Show Navigation Buttons
+                @if($userRole === 'courier')
+                if (!isSelf && (props.type === 'supplier' || props.type === 'factory')) {
+                    const distance = selfEntity ? calculateDistance(selfEntity.latitude, selfEntity.longitude, coords[1], coords[0]) : '?';
+                    const entityIcon = props.type === 'supplier' ? '📦' : '🏭';
+                    const entityLabel = props.type === 'supplier' ? 'Supplier' : 'Factory';
+                    
+                    popupContent += `
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-bottom: 10px; text-align: center;">
+                                📏 <strong>${distance} km</strong> dari lokasi Anda
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <button onclick="navigateTo(${coords[1]}, ${coords[0]}, '${props.name.replace(/'/g, "\\'")}')" 
+                                    style="width: 100%; padding: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                                    🗺️ Lihat Rute
+                                </button>
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${coords[1]},${coords[0]}" target="_blank" 
+                                   style="display: block; text-align: center; padding: 10px; background: linear-gradient(135deg, #4285F4, #34A853); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                                    🚗 Buka Google Maps
+                                </a>
+                            </div>
                         </div>
                     `;
                 }
