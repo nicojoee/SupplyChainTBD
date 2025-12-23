@@ -78,6 +78,84 @@
         animation: selfPulse 2s infinite ease-in-out;
     }
 
+    /* Map Controls Container - Bottom Right */
+    .map-controls-right {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .map-control-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: none;
+        background: rgba(30, 27, 75, 0.95);
+        backdrop-filter: blur(10px);
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.2s ease;
+    }
+
+    .map-control-btn:hover {
+        transform: scale(1.05);
+        background: rgba(50, 47, 95, 0.95);
+    }
+
+    /* Category Filter - Bottom Left */
+    .map-category-filter {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: 280px;
+        background: rgba(30, 27, 75, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .category-btn {
+        padding: 6px 12px;
+        border-radius: 20px;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .category-btn.active {
+        box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+
+    .category-btn.all { background: #6b7280; color: white; }
+    .category-btn.all.active { background: #374151; }
+    .category-btn.supplier { background: rgba(34, 197, 94, 0.3); color: #22c55e; }
+    .category-btn.supplier.active { background: #22c55e; color: white; }
+    .category-btn.factory { background: rgba(245, 158, 11, 0.3); color: #f59e0b; }
+    .category-btn.factory.active { background: #f59e0b; color: white; }
+    .category-btn.distributor { background: rgba(99, 102, 241, 0.3); color: #6366f1; }
+    .category-btn.distributor.active { background: #6366f1; color: white; }
+    .category-btn.courier { background: rgba(14, 165, 233, 0.3); color: #0ea5e9; }
+    .category-btn.courier.active { background: #0ea5e9; color: white; }
+
     /* Location pulse animation for auto-locate marker */
     @keyframes locationPulse {
         0% {
@@ -166,19 +244,34 @@
     </div>
     <div class="map-container" style="position: relative;">
         <div id="map"></div>
-        <!-- Auto-Locate Button - Bottom Right (Courier Only) -->
-        @if(auth()->user()->role === 'courier')
-        <button id="auto-locate-btn" onclick="autoLocateMe()" 
-                style="position: absolute; bottom: 20px; right: 20px; z-index: 1000; 
-                       width: 48px; height: 48px; border-radius: 50%; 
-                       background: linear-gradient(135deg, #3b82f6, #2563eb); 
-                       border: 3px solid white; color: white; font-size: 1.25rem;
-                       cursor: pointer; display: flex; align-items: center; justify-content: center;
-                       box-shadow: 0 4px 15px rgba(0,0,0,0.4);"
-                title="Locate Me">
-            📍
-        </button>
-        @endif
+        <!-- Map Controls -->
+        
+        <!-- Category Filter (Bottom Left) -->
+        <div class="map-category-filter">
+            <button onclick="filterMap('all')" class="category-btn all active" id="filter-all">
+                All
+            </button>
+            <button onclick="filterMap('supplier')" class="category-btn supplier" id="filter-supplier">
+                📦 Suppliers
+            </button>
+            <button onclick="filterMap('factory')" class="category-btn factory" id="filter-factory">
+                🏭 Factories
+            </button>
+            <button onclick="filterMap('distributor')" class="category-btn distributor" id="filter-distributor">
+                🏪 Distributors
+            </button>
+            <button onclick="filterMap('courier')" class="category-btn courier" id="filter-courier">
+                🚚 Couriers
+            </button>
+        </div>
+
+        <!-- Right Side Controls (Bottom Right) -->
+        <div class="map-controls-right">
+            <!-- Auto Locate Button (For everyone) -->
+            <button id="auto-locate-btn" onclick="locateMyAccount()" class="map-control-btn" title="Locate My Account">
+                📍
+            </button>
+        </div>
     </div>
 </div>
 
@@ -455,21 +548,56 @@
     // Auto-Locate Me function - GPS based location
     let myLocationMarker = null;
     let isLocating = false;
+    
+    // Define My Location Icon
+    const myLocationIcon = L.divIcon({
+        className: 'my-location-marker',
+        html: `<div style="
+            width: 24px; height: 24px; 
+            background: linear-gradient(135deg, #3b82f6, #2563eb); 
+            border: 3px solid white; 
+            border-radius: 50%; 
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 2px 8px rgba(0,0,0,0.3);
+            animation: locationPulse 2s infinite;
+        "></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+    });
 
-    function autoLocateMe() {
+    // New Locate function for all users
+    function locateMyAccount() {
+        // Checking button state to prevent double clicks
         const btn = document.getElementById('auto-locate-btn');
+        if (isLocating) return;
         
+        isLocating = true;
+        btn.innerHTML = '⌛'; // Loading spinner placeholder
+        btn.style.animation = 'pulse 1s infinite';
+
+        // 1. Try to use entity location first (for non-couriers)
+        @if(auth()->user()->role !== 'courier')
+            if (selfEntity && selfEntity.latitude && selfEntity.longitude && selfEntity.latitude != 0) {
+                map.setView([selfEntity.latitude, selfEntity.longitude], 16);
+                if (selfMarker) selfMarker.openPopup();
+                
+                // Reset button
+                setTimeout(() => {
+                    btn.innerHTML = '📍';
+                    btn.style.animation = '';
+                    isLocating = false;
+                }, 500);
+                return;
+            }
+        @endif
+
+        // 2. Use GPS (for Courier or fallback)
         if (!navigator.geolocation) {
-            alert('GPS tidak didukung di browser ini.');
+            alert('Browser anda tidak mendukung Geolocation.');
+            btn.innerHTML = '📍';
+            btn.style.animation = '';
+            isLocating = false;
             return;
         }
-
-        if (isLocating) return;
-        isLocating = true;
-
-        // Visual feedback - loading state
-        btn.innerHTML = '⏳';
-        btn.style.animation = 'pulse 1s infinite';
 
         navigator.geolocation.getCurrentPosition(
             function(position) {
@@ -477,25 +605,11 @@
                 const lng = position.coords.longitude;
                 const accuracy = position.coords.accuracy;
 
-                console.log('📍 Auto-locate success:', lat, lng, '±' + accuracy + 'm');
-
-                // Create or update my location marker
-                const myLocationIcon = L.divIcon({
-                    className: 'my-location-marker',
-                    html: `<div style="
-                        width: 24px; height: 24px; 
-                        background: linear-gradient(135deg, #3b82f6, #2563eb); 
-                        border: 3px solid white; 
-                        border-radius: 50%; 
-                        box-shadow: 0 0 15px rgba(59, 130, 246, 0.6), 0 2px 8px rgba(0,0,0,0.3);
-                        animation: locationPulse 2s infinite;
-                    "></div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                });
-
                 if (myLocationMarker) {
                     myLocationMarker.setLatLng([lat, lng]);
+                    const popupContent = myLocationMarker.getPopup().getContent();
+                    // Update content if needed
+                    myLocationMarker.setPopupContent(popupContent).openPopup();
                 } else {
                     myLocationMarker = L.marker([lat, lng], { icon: myLocationIcon, zIndexOffset: 1000 })
                         .addTo(map)
@@ -510,7 +624,7 @@
                         `);
                 }
 
-                // Zoom to location with appropriate zoom level
+                // Zoom to location
                 const zoomLevel = accuracy < 50 ? 17 : accuracy < 200 ? 15 : 13;
                 map.setView([lat, lng], zoomLevel);
                 myLocationMarker.openPopup();
@@ -527,17 +641,17 @@
             },
             function(error) {
                 console.error('GPS Error:', error);
-                let errorMsg = 'Gagal mendapatkan lokasi.';
+                let errorMsg = 'Gagal mendapatkan lokasi GPS.';
                 
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMsg = 'Izin GPS ditolak. Aktifkan GPS di pengaturan browser.';
+                        errorMsg = 'Izin GPS ditolak. Pastikan izin lokasi aktif.';
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMsg = 'Lokasi tidak tersedia. Pastikan GPS aktif.';
+                        errorMsg = 'Signal GPS lemah atau tidak tersedia.';
                         break;
                     case error.TIMEOUT:
-                        errorMsg = 'Timeout. Coba lagi.';
+                        errorMsg = 'Waktu permintaan habis.';
                         break;
                 }
                 
@@ -552,6 +666,59 @@
                 maximumAge: 0
             }
         );
+    }
+
+    // Map Filtering Function
+    let activeFilter = 'all';
+
+    function filterMap(category) {
+        activeFilter = category;
+        
+        // Update button states
+        document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('filter-' + category).classList.add('active');
+        
+        // Loop through all markers and show/hide based on category
+        // Suppliers
+        Object.values(allMarkers.suppliers).forEach(marker => {
+            if (category === 'all' || category === 'supplier') {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+            } else {
+                if (map.hasLayer(marker)) marker.removeFrom(map);
+            }
+        });
+
+        // Factories
+        Object.values(allMarkers.factories).forEach(marker => {
+            if (category === 'all' || category === 'factory') {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+            } else {
+                if (map.hasLayer(marker)) marker.removeFrom(map);
+            }
+        });
+
+        // Distributors
+        Object.values(allMarkers.distributors).forEach(marker => {
+            if (category === 'all' || category === 'distributor') {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+            } else {
+                if (map.hasLayer(marker)) marker.removeFrom(map);
+            }
+        });
+
+        // Couriers
+        Object.values(courierMarkers).forEach(marker => {
+            if (category === 'all' || category === 'courier') {
+                if (!map.hasLayer(marker)) marker.addTo(map);
+            } else {
+                if (map.hasLayer(marker)) marker.removeFrom(map);
+            }
+        });
+
+        // Always keep Self Marker visible if it exists
+        if (selfMarker) {
+             if (!map.hasLayer(selfMarker)) selfMarker.addTo(map);
+        }
     }
 
     // Listen for fullscreen change (ESC key exit)
