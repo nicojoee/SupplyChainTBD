@@ -226,7 +226,7 @@
             <div class="form-group">
                 <label class="form-label">Attachment (Image/PDF, optional)</label>
                 <input type="file" name="attachment" accept="image/*,.pdf,application/pdf" class="form-control">
-                <small style="color: rgba(255,255,255,0.4);">Max 5MB. Images will be compressed to 200KB.</small>
+                <small style="color: rgba(255,255,255,0.4);">Image: auto-compress to 200KB. PDF: max 2MB.</small>
             </div>
             <button type="submit" class="btn" style="width: 100%; background: #f59e0b;">
                 📢 Send Broadcast
@@ -406,9 +406,10 @@ document.getElementById('broadcast-form').addEventListener('submit', async funct
                 submitBtn.innerHTML = '⏳ Compressing image...';
                 const compressedFile = await compressImage(file, 200);
                 formData.set('attachment', compressedFile);
-            } else if (isPDF && file.size > 5 * 1024 * 1024) {
-                // PDF too large (max 5MB)
-                alert('❌ PDF file too large. Maximum 5MB allowed.');
+            } else if (isPDF && file.size > 2 * 1024 * 1024) {
+                // PDF too large (max 2MB)
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                alert(`❌ PDF file too large (${sizeMB}MB).\n\nMaximum 2MB allowed.\n\nTips to reduce PDF size:\n• Use online tools like ilovepdf.com\n• Reduce image quality in PDF\n• Remove unnecessary pages`);
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
                 return;
