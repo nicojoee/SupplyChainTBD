@@ -44,7 +44,87 @@ class SuperAdminController extends Controller
             'role' => 'required|in:superadmin,supplier,factory,distributor,courier',
         ]);
 
-        $user->update(['role' => $request->role]);
+        $oldRole = $user->role;
+        $newRole = $request->role;
+        
+        // If role is not changing, just return
+        if ($oldRole === $newRole) {
+            return back()->with('info', 'Role is already set to ' . ucfirst($newRole));
+        }
+
+        // Clean up old entity profile if exists
+        if ($oldRole === 'supplier' && $user->supplier) {
+            $user->supplier->products()->delete();
+            $user->supplier->delete();
+        } elseif ($oldRole === 'factory' && $user->factory) {
+            $user->factory->products()->delete();
+            $user->factory->delete();
+        } elseif ($oldRole === 'distributor' && $user->distributor) {
+            $user->distributor->stocks()->delete();
+            $user->distributor->delete();
+        } elseif ($oldRole === 'courier' && $user->courier) {
+            $user->courier->delete();
+        }
+
+        // Update user role
+        $user->update(['role' => $newRole]);
+
+        // Create new entity profile with default/empty location
+        $entityId = null;
+        $entityType = null;
+
+        if ($newRole === 'supplier') {
+            $supplier = Supplier::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+            ]);
+            $entityId = $supplier->id;
+            $entityType = 'supplier';
+        } elseif ($newRole === 'factory') {
+            $factory = Factory::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+                'production_capacity' => 0,
+            ]);
+            $entityId = $factory->id;
+            $entityType = 'factory';
+        } elseif ($newRole === 'distributor') {
+            $distributor = Distributor::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'address' => 'Location not set',
+                'latitude' => 0,
+                'longitude' => 0,
+                'warehouse_capacity' => 0,
+            ]);
+            $entityId = $distributor->id;
+            $entityType = 'distributor';
+        } elseif ($newRole === 'courier') {
+            Courier::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'status' => 'idle',
+            ]);
+            // Courier doesn't need fixed location, so just redirect back
+            return back()->with('success', 'User role updated to Courier successfully!');
+        }
+
+        // For supplier/factory/distributor, redirect to dashboard with setup_location mode
+        if ($entityType && $entityId) {
+            return redirect()->route('dashboard')
+                ->with('setup_location', [
+                    'type' => $entityType,
+                    'id' => $entityId,
+                    'name' => $user->name,
+                ])
+                ->with('success', "User role updated to " . ucfirst($newRole) . "! Please click on the map to set their location.");
+        }
 
         return back()->with('success', 'User role updated successfully.');
     }

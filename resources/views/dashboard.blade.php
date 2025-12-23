@@ -1493,6 +1493,14 @@
     let editPreviewMarker = null;
     let editBannerElement = null;
 
+    // Setup Location Mode State (for new role assignment)
+    let setupLocationMode = false;
+    let setupLocationEntity = null;
+    @if(session('setup_location'))
+    setupLocationMode = true;
+    setupLocationEntity = @json(session('setup_location'));
+    @endif
+
     // Create edit mode banner
     function createEditBanner() {
         if (editBannerElement) return;
@@ -1757,8 +1765,144 @@
     // Click marker for adding new entities
     let clickMarker = null;
 
-    // Handle map click for edit mode
+    // Setup location banner element
+    let setupBannerElement = null;
+
+    // Show setup location banner
+    function showSetupLocationBanner(entityName, entityType) {
+        const mapContainer = document.getElementById('map');
+        
+        setupBannerElement = document.createElement('div');
+        setupBannerElement.id = 'setup-location-banner';
+        setupBannerElement.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.95), rgba(22, 163, 74, 0.95));
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: system-ui, sans-serif;
+            backdrop-filter: blur(8px);
+        `;
+        
+        const icon = entityType === 'supplier' ? '📦' : entityType === 'factory' ? '🏭' : '🏪';
+        setupBannerElement.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">${icon}</span>
+                <div>
+                    <div style="font-weight: 600;">Set Location for ${entityName}</div>
+                    <div style="font-size: 0.8rem; opacity: 0.9;">Click anywhere on the map to set their ${entityType} location</div>
+                </div>
+            </div>
+            <button onclick="cancelSetupLocation()" style="
+                background: rgba(255,255,255,0.25);
+                border: none;
+                color: white;
+                padding: 8px 14px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+                font-size: 0.85rem;
+            ">
+                ✕ Skip
+            </button>
+        `;
+        mapContainer.style.position = 'relative';
+        mapContainer.appendChild(setupBannerElement);
+        
+        // Change cursor
+        mapContainer.style.cursor = 'crosshair';
+    }
+
+    // Hide setup location banner
+    function hideSetupLocationBanner() {
+        if (setupBannerElement) {
+            setupBannerElement.remove();
+            setupBannerElement = null;
+        }
+        document.getElementById('map').style.cursor = '';
+    }
+
+    // Cancel setup location mode
+    window.cancelSetupLocation = function() {
+        setupLocationMode = false;
+        setupLocationEntity = null;
+        hideSetupLocationBanner();
+        showSuccessToast('⚠️ Location setup skipped. You can set it later from the map.');
+    };
+
+    // Save setup location
+    function saveSetupLocation(lat, lng) {
+        if (!setupLocationEntity) return;
+        
+        const { type, id, name } = setupLocationEntity;
+        const plural = getEntityPlural(type);
+        
+        // Send update request
+        fetch(`/superadmin/${plural}/${id}/position`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lng
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json().catch(() => ({ success: true }));
+            }
+            throw new Error('Failed to save location');
+        })
+        .then(data => {
+            if (data.success) {
+                showSuccessToast(`✅ Location set for "${name}"!`);
+                // Reload to show marker at new position
+                setTimeout(() => location.reload(), 1500);
+            }
+        })
+        .catch(err => {
+            console.error('Error saving location:', err);
+            alert('Failed to save location. Please try again.');
+        })
+        .finally(() => {
+            setupLocationMode = false;
+            setupLocationEntity = null;
+            hideSetupLocationBanner();
+        });
+    }
+
+    // Auto-start setup location mode if redirected from role update
+    if (setupLocationMode && setupLocationEntity) {
+        setTimeout(() => {
+            showSetupLocationBanner(setupLocationEntity.name, setupLocationEntity.type);
+        }, 500);
+    }
+
+    // Handle map click for edit mode and setup location mode
     map.on('click', function(e) {
+        // Priority 1: Setup location mode (new role assignment)
+        if (setupLocationMode && setupLocationEntity) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            if (confirm(`Set location for "${setupLocationEntity.name}"?\n\nCoordinates:\nLat: ${lat.toFixed(6)}\nLng: ${lng.toFixed(6)}`)) {
+                saveSetupLocation(lat, lng);
+            }
+            return;
+        }
+
+        // Priority 2: Edit position mode
         if (editModeActive && editingEntity) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
