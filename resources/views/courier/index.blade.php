@@ -47,8 +47,18 @@
         $availableOrders = \App\Models\Order::whereNull('courier_id')
             ->whereIn('status', ['pickup', 'confirmed'])
             ->with(['items.product', 'sellerSupplier', 'sellerFactory'])
-            ->take(10)
-            ->get();
+            ->take(20)
+            ->get()
+            ->filter(function($order) {
+                // Calculate remaining - use items sum if total_quantity is 0
+                $totalQty = $order->total_quantity;
+                if ($totalQty <= 0) {
+                    $totalQty = $order->items->sum('quantity');
+                }
+                $remaining = $totalQty - $order->delivered_quantity;
+                return $remaining > 0;
+            })
+            ->take(10);
     @endphp
     @if($availableOrders->count() > 0)
         <div style="padding: 1rem; display: grid; gap: 0.75rem;">
@@ -62,11 +72,12 @@
                 
                 // Calculate remaining quantity
                 $remainingQty = $totalQty - $order->delivered_quantity;
-                if ($remainingQty < 0) $remainingQty = $totalQty;
+                if ($remainingQty <= 0) continue; // Skip if nothing left
                 
                 $courierCapacity = $courier->vehicle_capacity ?? 15;
                 $willCarry = min($courierCapacity, $remainingQty);
             @endphp
+            @if($remainingQty > 0)
             <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                     <div>
@@ -98,6 +109,7 @@
                     </div>
                 </div>
             </div>
+            @endif
             @endforeach
         </div>
     @else

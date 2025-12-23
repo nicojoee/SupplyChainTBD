@@ -333,7 +333,8 @@ class CourierController extends Controller
         // Update delivered quantity
         $newDeliveredQty = $order->delivered_quantity + $quantityToCarry;
 
-        // Determine if this completes the order or leaves remainder
+        // Always assign this order to the courier (they are now responsible for delivering their portion)
+        // If partial, record in notes what portion they took
         if ($newDeliveredQty >= $totalQty) {
             // This courier completes the delivery
             $order->update([
@@ -343,23 +344,24 @@ class CourierController extends Controller
                 'delivered_quantity' => $totalQty,
                 'status' => 'processing',
             ]);
-            $message = "Delivery fully accepted! Carrying {$quantityToCarry} ton.";
+            $message = "Pengiriman diterima sepenuhnya! Mengangkut {$quantityToCarry} ton.";
         } else {
-            // Partial delivery - this courier takes what they can
-            // Keep order available for other couriers
+            // Partial delivery - this courier takes their capacity
+            // Assign order to this courier, update status to processing
+            $note = $order->notes ?? '';
+            $note .= "\n[" . now()->format('Y-m-d H:i') . "] Courier {$courier->name} mengangkut {$quantityToCarry} ton dari total {$totalQty} ton.";
+            
             $order->update([
+                'courier_id' => $courier->id,
+                'courier_accepted_at' => now(),
+                'total_quantity' => $totalQty,
                 'delivered_quantity' => $newDeliveredQty,
-                // Don't set courier_id so order stays available
-                // Don't change status
+                'status' => 'processing',
+                'notes' => trim($note),
             ]);
             
-            // Record this courier's partial pickup in notes
-            $note = $order->notes ?? '';
-            $note .= "\n[" . now()->format('Y-m-d H:i') . "] Courier {$courier->name} took {$quantityToCarry} ton.";
-            $order->update(['notes' => trim($note)]);
-            
-            $remaining = $order->total_quantity - $newDeliveredQty;
-            $message = "Accepted {$quantityToCarry} ton (your truck capacity). Remaining {$remaining} ton still needs pickup by another courier.";
+            $remaining = $totalQty - $newDeliveredQty;
+            $message = "Mengangkut {$quantityToCarry} ton (kapasitas truk Anda). Sisa {$remaining} ton perlu dijemput oleh courier lain nanti.";
         }
 
         // Update courier status
