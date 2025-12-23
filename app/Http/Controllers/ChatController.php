@@ -43,7 +43,7 @@ class ChatController extends Controller
         // Get broadcasts (only last 7 days)
         $broadcasts = BroadcastMessage::with('sender')
             ->where('created_at', '>=', now()->subDays(7))
-            ->orderByDesc('created_at')
+            ->orderBy('created_at', 'asc')  // Oldest first, newest at bottom
             ->get();
 
         return view('chat.index', compact('conversations', 'broadcasts'));
@@ -109,7 +109,7 @@ class ChatController extends Controller
         // Get broadcasts (only last 7 days)
         $broadcasts = BroadcastMessage::with('sender')
             ->where('created_at', '>=', now()->subDays(7))
-            ->orderByDesc('created_at')
+            ->orderBy('created_at', 'asc')  // Oldest first, newest at bottom
             ->get();
 
         return view('chat.index', [

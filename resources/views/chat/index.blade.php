@@ -257,13 +257,19 @@ function dismissBroadcast(broadcastId) {
     }
 }
 
-// Hide already dismissed broadcasts on load
+// Hide already dismissed broadcasts on load + scroll to bottom
 document.addEventListener('DOMContentLoaded', function() {
     let dismissed = JSON.parse(localStorage.getItem('dismissedBroadcasts') || '[]');
     dismissed.forEach(id => {
         const item = document.getElementById('broadcast-' + id);
         if (item) item.style.display = 'none';
     });
+    
+    // Auto-scroll broadcasts to bottom (newest)
+    const broadcastsContainer = document.getElementById('broadcasts-container');
+    if (broadcastsContainer) {
+        broadcastsContainer.scrollTop = broadcastsContainer.scrollHeight;
+    }
 });
 
 // Load contacts when modal opens
