@@ -149,28 +149,28 @@
                             
                             @php
                                 $canCancel = false;
-                                $remainingSeconds = 0;
-                                $acceptedAt = null;
+                                $remainingTime = 0;
                                 if ($order->courier_accepted_at) {
+                                    // Calculate remaining seconds from 5-minute window
                                     $acceptedAt = \Carbon\Carbon::parse($order->courier_accepted_at);
                                     $expiresAt = $acceptedAt->copy()->addMinutes(5);
-                                    $remainingSeconds = max(0, now()->diffInSeconds($expiresAt, false));
-                                    $canCancel = $remainingSeconds > 0;
+                                    $now = \Carbon\Carbon::now();
+                                    
+                                    if ($now->lt($expiresAt)) {
+                                        $canCancel = true;
+                                        $remainingTime = $now->diffInSeconds($expiresAt, false);
+                                        if ($remainingTime < 0) $remainingTime = 0;
+                                    }
                                 }
                             @endphp
                             
-                            @if($canCancel && $acceptedAt)
-                                <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 0.25rem;">
-                                    Accepted at: {{ $acceptedAt->format('H:i:s') }}
-                                </div>
-                                <button type="button" class="btn btn-danger cancel-btn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;"
+                            @if($canCancel && $remainingTime > 0)
+                                <button type="button" class="btn btn-danger" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;"
                                         onclick="showCancelConfirmation('{{ $order->order_number }}', {{ $order->id }})"
                                         data-order-id="{{ $order->id }}"
-                                        data-expires-at="{{ $acceptedAt->copy()->addMinutes(5)->timestamp * 1000 }}">
-                                    ❌ Cancel (<span class="cancel-countdown" data-order-id="{{ $order->id }}">{{ floor($remainingSeconds / 60) }}:{{ str_pad($remainingSeconds % 60, 2, '0', STR_PAD_LEFT) }}</span>)
+                                        data-remaining-seconds="{{ $remainingTime }}">
+                                    ❌ Cancel (<span class="cancel-countdown" data-order-id="{{ $order->id }}">{{ floor($remainingTime / 60) }}:{{ str_pad($remainingTime % 60, 2, '0', STR_PAD_LEFT) }}</span>)
                                 </button>
-                            @elseif($order->courier_accepted_at && !$canCancel)
-                                <span style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">❌ Cancel window expired</span>
                             @endif
                         </div>
                     </td>
@@ -346,47 +346,32 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Countdown Timer for Cancel Buttons - uses server-provided expiration timestamp
+// Countdown Timer for Cancel Buttons
 function initCountdowns() {
-    const cancelButtons = document.querySelectorAll('[data-expires-at]');
+    const cancelButtons = document.querySelectorAll('[data-remaining-seconds]');
     
     cancelButtons.forEach(button => {
-        const expiresAt = parseInt(button.getAttribute('data-expires-at'));
+        let remaining = parseInt(button.getAttribute('data-remaining-seconds'));
         const orderId = button.getAttribute('data-order-id');
         const countdownSpan = button.querySelector('.cancel-countdown');
         
-        if (!countdownSpan || !expiresAt) return;
+        if (!countdownSpan || remaining <= 0) return;
         
         const updateCountdown = () => {
-            const now = Date.now();
-            const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
-            
             if (remaining <= 0) {
-                // Time expired - remove the cancel button and show expired message
-                const parent = button.parentElement;
+                // Remove the cancel button when time expires
                 button.remove();
-                const expiredSpan = document.createElement('span');
-                expiredSpan.style.cssText = 'font-size: 0.75rem; color: rgba(255,255,255,0.4);';
-                expiredSpan.textContent = '❌ Cancel window expired';
-                parent.appendChild(expiredSpan);
-                return false; // Stop interval
+                return;
             }
             
             const minutes = Math.floor(remaining / 60);
             const seconds = remaining % 60;
             countdownSpan.textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-            return true; // Continue interval
+            remaining--;
         };
         
-        // Initial update
-        if (updateCountdown()) {
-            // Update every second
-            const interval = setInterval(() => {
-                if (!updateCountdown()) {
-                    clearInterval(interval);
-                }
-            }, 1000);
-        }
+        // Update every second
+        setInterval(updateCountdown, 1000);
     });
 }
 
