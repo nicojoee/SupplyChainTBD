@@ -132,7 +132,7 @@
                 </div>
 
                 <div class="w-full text-center space-y-2 mb-10">
-                    <h2 class="font-outfit text-3xl font-bold text-slate-900 tracking-tight">Welcome Back</h2>
+                    <h2 id="animatedTitle" class="font-outfit text-3xl font-bold text-slate-900 tracking-tight h-10">Welcome Back</h2>
                     <p class="text-slate-500 text-sm font-medium">Seamlessly manage your logistics network.</p>
                 </div>
 
@@ -160,7 +160,7 @@
                 </a>
 
                 <p class="mt-8 text-center text-xs text-slate-400">
-                    Use your institutional account to continue.<br>By logging in, you agree to our Terms of Service.
+                    Use your google account to continue.<br>By logging in, you agree to our Terms of Service.
                 </p>
 
                 <!-- Footer Contacts -->
@@ -208,6 +208,32 @@
 
     <script>
         localStorage.removeItem('dismissedBroadcasts');
+
+        // Animated Title Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            const titleElement = document.getElementById('animatedTitle');
+            const fullText = 'Welcome Back !';
+            const fixedPart = 'Wel';
+            const remainingText = fullText.slice(3); // "come Back !"
+            let index = 0;
+            let pauseCounter = 0;
+            const pauseDuration = 10; // Wait for 10 cycles before resetting
+
+            const animateTitle = () => {
+                if (index <= remainingText.length) {
+                    titleElement.textContent = fixedPart + remainingText.slice(0, index);
+                    index++;
+                } else if (pauseCounter < pauseDuration) {
+                    pauseCounter++;
+                } else {
+                    index = 0;
+                    pauseCounter = 0;
+                    titleElement.textContent = fixedPart;
+                }
+            };
+
+            setInterval(animateTitle, 200); // Run animation every 200ms
+        });
     </script>
 </body>
 </html>
