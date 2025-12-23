@@ -65,7 +65,7 @@ class CourierController extends Controller
                         ->whereIn('status', ['confirmed', 'processing', 'pickup'])
                         ->count();
 
-                    $distance = calculateDistance($courierLat, $courierLng, $supplier->latitude, $supplier->longitude);
+                    $distance = $this->calculateDistance($courierLat, $courierLng, $supplier->latitude, $supplier->longitude);
                     $nearbyLocations[] = [
                         'type' => 'Supplier',
                         'name' => $supplier->name,
@@ -90,7 +90,7 @@ class CourierController extends Controller
                         ->whereIn('status', ['confirmed', 'processing', 'pickup'])
                         ->count();
 
-                    $distance = calculateDistance($courierLat, $courierLng, $factory->latitude, $factory->longitude);
+                    $distance = $this->calculateDistance($courierLat, $courierLng, $factory->latitude, $factory->longitude);
                     $nearbyLocations[] = [
                         'type' => 'Factory',
                         'name' => $factory->name,
@@ -254,7 +254,7 @@ class CourierController extends Controller
 
                 // Calculate distance using Haversine formula
                 if ($sellerLat && $sellerLng) {
-                    $order->distance = calculateDistance($courierLat, $courierLng, $sellerLat, $sellerLng);
+                    $order->distance = $this->calculateDistance($courierLat, $courierLng, $sellerLat, $sellerLng);
                 } else {
                     $order->distance = 999999; // Unknown location, put at end
                 }
@@ -350,5 +350,21 @@ class CourierController extends Controller
         return redirect()->route('courier.index')->with('success', 'Delivery cancelled successfully. The order is now available for other couriers.');
     }
 
+    // Calculate distance between two coordinates (Haversine formula)
+    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
+    {
+        $earthRadius = 6371; // km
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLng / 2) * sin($dLng / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
 }
 

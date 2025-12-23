@@ -99,7 +99,7 @@ class DashboardController extends Controller
                 ->whereHas('supplier')
                 ->get()
                 ->map(function ($sp) use ($userLat, $userLng) {
-                    $distance = calculateDistance($userLat, $userLng, $sp->supplier->latitude ?? 0, $sp->supplier->longitude ?? 0);
+                    $distance = $this->calculateDistance($userLat, $userLng, $sp->supplier->latitude ?? 0, $sp->supplier->longitude ?? 0);
                     return [
                         'id' => $sp->id,
                         'product_name' => $sp->product->name ?? 'Unknown',
@@ -118,7 +118,7 @@ class DashboardController extends Controller
                 ->whereHas('factory')
                 ->get()
                 ->map(function ($fp) use ($userLat, $userLng) {
-                    $distance = calculateDistance($userLat, $userLng, $fp->factory->latitude ?? 0, $fp->factory->longitude ?? 0);
+                    $distance = $this->calculateDistance($userLat, $userLng, $fp->factory->latitude ?? 0, $fp->factory->longitude ?? 0);
                     return [
                         'id' => $fp->id,
                         'product_name' => $fp->product->name ?? 'Unknown',
@@ -152,7 +152,18 @@ class DashboardController extends Controller
         return view('dashboard', compact('suppliers', 'factories', 'distributors', 'couriers', 'selfEntity', 'myProducts', 'myOrders', 'marketplace', 'assignedOrders', 'availableOrders'));
     }
 
-
+    // Haversine distance calculation (returns km)
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
+    {
+        $R = 6371; // Earth's radius in km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat/2) * sin($dLat/2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon/2) * sin($dLon/2);
+        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
+        return round($R * $c, 1);
+    }
 
     public function mapData()
     {
