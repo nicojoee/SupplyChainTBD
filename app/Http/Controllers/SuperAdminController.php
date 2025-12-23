@@ -198,13 +198,35 @@ class SuperAdminController extends Controller
 
     public function deleteCourier(Courier $courier)
     {
-        $user = $courier->user;
-        $courier->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            // Check if courier has active orders
+            $hasActiveOrders = \App\Models\Order::where('courier_id', $courier->id)
+                ->whereIn('status', ['processing', 'shipped'])
+                ->exists();
+            
+            if ($hasActiveOrders) {
+                return redirect()->route('superadmin.couriers')
+                    ->with('error', 'Cannot delete courier with active deliveries. Please complete all deliveries first.');
+            }
 
-        return redirect()->route('superadmin.couriers')->with('success', 'Courier deleted successfully!');
+            $user = $courier->user;
+            
+            // Unassign courier from completed orders (keep history)
+            \App\Models\Order::where('courier_id', $courier->id)
+                ->update(['courier_id' => null]);
+            
+            $courier->delete();
+            
+            // Delete user account if no other entities linked
+            if ($user && !$user->supplier && !$user->factory && !$user->distributor) {
+                $user->delete();
+            }
+
+            return redirect()->route('superadmin.couriers')->with('success', 'Courier deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('superadmin.couriers')
+                ->with('error', 'Error deleting courier: ' . $e->getMessage());
+        }
     }
 
     // Supplier Management
@@ -216,14 +238,33 @@ class SuperAdminController extends Controller
 
     public function deleteSupplier(Supplier $supplier)
     {
-        $user = $supplier->user;
-        $supplier->products()->delete();
-        $supplier->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            // Check if supplier has orders
+            $hasOrders = \App\Models\Order::where('seller_type', 'supplier')
+                ->where('seller_id', $supplier->id)
+                ->exists();
+            
+            if ($hasOrders) {
+                return redirect()->route('superadmin.suppliers')
+                    ->with('error', 'Cannot delete supplier with existing orders. Please cancel or complete all orders first.');
+            }
 
-        return redirect()->route('superadmin.suppliers')->with('success', 'Supplier deleted successfully!');
+            $user = $supplier->user;
+            
+            // Delete related data first
+            $supplier->products()->delete();
+            $supplier->delete();
+            
+            // Delete user account if no other entities linked
+            if ($user && !$user->factory && !$user->distributor && !$user->courier) {
+                $user->delete();
+            }
+
+            return redirect()->route('superadmin.suppliers')->with('success', 'Supplier deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('superadmin.suppliers')
+                ->with('error', 'Error deleting supplier: ' . $e->getMessage());
+        }
     }
 
     // Factory Management
@@ -235,14 +276,36 @@ class SuperAdminController extends Controller
 
     public function deleteFactory(Factory $factory)
     {
-        $user = $factory->user;
-        $factory->products()->delete();
-        $factory->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            // Check if factory has orders (as buyer or seller)
+            $hasOrders = \App\Models\Order::where(function($query) use ($factory) {
+                $query->where('buyer_type', 'factory')->where('buyer_id', $factory->id)
+                      ->orWhere(function($q) use ($factory) {
+                          $q->where('seller_type', 'factory')->where('seller_id', $factory->id);
+                      });
+            })->exists();
+            
+            if ($hasOrders) {
+                return redirect()->route('superadmin.factories')
+                    ->with('error', 'Cannot delete factory with existing orders. Please cancel or complete all orders first.');
+            }
 
-        return redirect()->route('superadmin.factories')->with('success', 'Factory deleted successfully!');
+            $user = $factory->user;
+            
+            // Delete related data first
+            $factory->products()->delete();
+            $factory->delete();
+            
+            // Delete user account if no other entities linked
+            if ($user && !$user->supplier && !$user->distributor && !$user->courier) {
+                $user->delete();
+            }
+
+            return redirect()->route('superadmin.factories')->with('success', 'Factory deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('superadmin.factories')
+                ->with('error', 'Error deleting factory: ' . $e->getMessage());
+        }
     }
 
     // Distributor Management
@@ -254,14 +317,33 @@ class SuperAdminController extends Controller
 
     public function deleteDistributor(Distributor $distributor)
     {
-        $user = $distributor->user;
-        $distributor->stocks()->delete();
-        $distributor->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            // Check if distributor has orders
+            $hasOrders = \App\Models\Order::where('buyer_type', 'distributor')
+                ->where('buyer_id', $distributor->id)
+                ->exists();
+            
+            if ($hasOrders) {
+                return redirect()->route('superadmin.distributors')
+                    ->with('error', 'Cannot delete distributor with existing orders. Please cancel or complete all orders first.');
+            }
 
-        return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
+            $user = $distributor->user;
+            
+            // Delete related data first
+            $distributor->stocks()->delete();
+            $distributor->delete();
+            
+            // Delete user account if no other entities linked
+            if ($user && !$user->supplier && !$user->factory && !$user->courier) {
+                $user->delete();
+            }
+
+            return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('superadmin.distributors')
+                ->with('error', 'Error deleting distributor: ' . $e->getMessage());
+        }
     }
 
     // AJAX Position Update Methods
@@ -313,46 +395,110 @@ class SuperAdminController extends Controller
     // AJAX Delete Methods
     public function deleteSupplierAjax(Supplier $supplier)
     {
-        $user = $supplier->user;
-        $supplier->products()->delete();
-        $supplier->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            // Check if supplier has orders
+            $hasOrders = \App\Models\Order::where('seller_type', 'supplier')
+                ->where('seller_id', $supplier->id)
+                ->exists();
+            
+            if ($hasOrders) {
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot delete supplier with existing orders'], 400);
+                }
+                return redirect()->route('superadmin.suppliers')
+                    ->with('error', 'Cannot delete supplier with existing orders. Please cancel or complete all orders first.');
+            }
 
-        if (request()->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Supplier deleted']);
+            $user = $supplier->user;
+            $supplier->products()->delete();
+            $supplier->delete();
+            
+            if ($user && !$user->factory && !$user->distributor && !$user->courier) {
+                $user->delete();
+            }
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Supplier deleted']);
+            }
+            return redirect()->route('superadmin.suppliers')->with('success', 'Supplier deleted successfully!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->route('superadmin.suppliers')->with('error', 'Error deleting supplier: ' . $e->getMessage());
         }
-        return redirect()->route('superadmin.suppliers')->with('success', 'Supplier deleted successfully!');
     }
 
     public function deleteFactoryAjax(Factory $factory)
     {
-        $user = $factory->user;
-        $factory->products()->delete();
-        $factory->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            $hasOrders = \App\Models\Order::where(function($query) use ($factory) {
+                $query->where('buyer_type', 'factory')->where('buyer_id', $factory->id)
+                      ->orWhere(function($q) use ($factory) {
+                          $q->where('seller_type', 'factory')->where('seller_id', $factory->id);
+                      });
+            })->exists();
+            
+            if ($hasOrders) {
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot delete factory with existing orders'], 400);
+                }
+                return redirect()->route('superadmin.factories')
+                    ->with('error', 'Cannot delete factory with existing orders.');
+            }
 
-        if (request()->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Factory deleted']);
+            $user = $factory->user;
+            $factory->products()->delete();
+            $factory->delete();
+            
+            if ($user && !$user->supplier && !$user->distributor && !$user->courier) {
+                $user->delete();
+            }
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Factory deleted']);
+            }
+            return redirect()->route('superadmin.factories')->with('success', 'Factory deleted successfully!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->route('superadmin.factories')->with('error', 'Error: ' . $e->getMessage());
         }
-        return redirect()->route('superadmin.factories')->with('success', 'Factory deleted successfully!');
     }
 
     public function deleteDistributorAjax(Distributor $distributor)
     {
-        $user = $distributor->user;
-        $distributor->stocks()->delete();
-        $distributor->delete();
-        if ($user) {
-            $user->delete();
-        }
+        try {
+            $hasOrders = \App\Models\Order::where('buyer_type', 'distributor')
+                ->where('buyer_id', $distributor->id)
+                ->exists();
+            
+            if ($hasOrders) {
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot delete distributor with existing orders'], 400);
+                }
+                return redirect()->route('superadmin.distributors')
+                    ->with('error', 'Cannot delete distributor with existing orders.');
+            }
 
-        if (request()->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Distributor deleted']);
+            $user = $distributor->user;
+            $distributor->stocks()->delete();
+            $distributor->delete();
+            
+            if ($user && !$user->supplier && !$user->factory && !$user->courier) {
+                $user->delete();
+            }
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => true, 'message' => 'Distributor deleted']);
+            }
+            return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->route('superadmin.distributors')->with('error', 'Error: ' . $e->getMessage());
         }
-        return redirect()->route('superadmin.distributors')->with('success', 'Distributor deleted successfully!');
     }
 }
