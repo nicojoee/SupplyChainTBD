@@ -418,5 +418,60 @@ class CourierController extends Controller
 
         return $earthRadius * $c;
     }
+
+    // Show courier vehicle profile page
+    public function profile()
+    {
+        $user = auth()->user();
+        $courier = $user->courier;
+
+        if (!$courier) {
+            return view('courier.setup');
+        }
+
+        // Get all registered couriers with vehicles for the list
+        $allCouriers = Courier::with('user')->get();
+
+        return view('courier.profile', compact('courier', 'allCouriers'));
+    }
+
+    // Update courier profile
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'vehicle_type' => 'required|string|in:small_15,medium_20,large_30',
+            'license_plate' => 'nullable|string|max:20',
+            'phone' => 'required|string|max:20',
+        ]);
+
+        $courier = auth()->user()->courier;
+
+        if (!$courier) {
+            return back()->with('error', 'Courier profile not found.');
+        }
+
+        // Parse vehicle type to get capacity
+        $vehicleLabels = [
+            'small_15' => 'Small Truck - 15 Ton',
+            'medium_20' => 'Medium Truck - 20 Ton',
+            'large_30' => 'Large Truck - 30 Ton',
+        ];
+        $capacities = [
+            'small_15' => 15,
+            'medium_20' => 20,
+            'large_30' => 30,
+        ];
+
+        $courier->update([
+            'name' => $request->name,
+            'vehicle_type' => $vehicleLabels[$request->vehicle_type] ?? $request->vehicle_type,
+            'vehicle_capacity' => $capacities[$request->vehicle_type] ?? 15,
+            'license_plate' => $request->license_plate,
+            'phone' => $request->phone,
+        ]);
+
+        return back()->with('success', 'Vehicle profile updated successfully.');
+    }
 }
 

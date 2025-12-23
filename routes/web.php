@@ -146,6 +146,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/available-deliveries', [CourierController::class, 'availableDeliveries'])->name('available-deliveries');
         Route::post('/accept/{order}', [CourierController::class, 'acceptDelivery'])->name('accept');
         Route::post('/cancel/{order}', [CourierController::class, 'cancelDelivery'])->name('cancel');
+        // Vehicle profile management
+        Route::get('/profile', [CourierController::class, 'profile'])->name('profile');
+        Route::post('/profile/update', [CourierController::class, 'updateProfile'])->name('profile.update');
     });
 
     // Chat routes

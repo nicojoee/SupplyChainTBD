@@ -1087,10 +1087,16 @@
                 @if(auth()->user()->role === 'courier' || auth()->user()->role === 'superadmin')
                 <div class="nav-section">
                     <div class="nav-section-title">Courier</div>
-                    <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.*') ? 'active' : '' }}">
+                    <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.index') ? 'active' : '' }}">
                         <span class="nav-icon">🚛</span>
                         My Deliveries
                     </a>
+                    @if(auth()->user()->role === 'courier')
+                    <a href="{{ route('courier.profile') }}" class="nav-link {{ request()->routeIs('courier.profile') ? 'active' : '' }}">
+                        <span class="nav-icon">🚚</span>
+                        Vehicle Profile
+                    </a>
+                    @endif
                 </div>
                 @endif
             </nav>
