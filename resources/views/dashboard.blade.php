@@ -1397,7 +1397,7 @@
             // For courier: use GPS auto-locate for accurate real-time position
             console.log('Courier detected - triggering GPS auto-locate...');
             setTimeout(() => {
-                autoLocateMe();
+                locateMyAccount();
             }, 1000);
             @else
             if (selfEntity && selfEntity.latitude && selfEntity.longitude && 
