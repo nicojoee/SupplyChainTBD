@@ -231,42 +231,51 @@ class ChatController extends Controller
     // Broadcast message to all users (superadmin only)
     public function sendBroadcast(Request $request)
     {
-        $user = auth()->user();
-        
-        if ($user->role !== 'superadmin') {
-            return response()->json(['error' => 'Unauthorized'], 403);
+        try {
+            $user = auth()->user();
+            
+            if ($user->role !== 'superadmin') {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $request->validate([
+                'message' => 'nullable|string|max:5000',
+                'image' => 'nullable|image|max:5120',
+            ]);
+
+            if (!$request->message && !$request->hasFile('image')) {
+                return response()->json(['error' => 'Message or image is required'], 400);
+            }
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                // On Vercel, file upload to local disk won't persist
+                // For now, skip image upload on serverless
+                // $imagePath = $request->file('image')->store('broadcast_images', 'public');
+            }
+
+            $broadcast = BroadcastMessage::create([
+                'sender_id' => $user->id,
+                'message' => $request->message,
+                'image_path' => $imagePath,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'broadcast' => [
+                    'id' => $broadcast->id,
+                    'message' => $broadcast->message,
+                    'image_path' => $broadcast->image_path,
+                    'sender_name' => $user->name,
+                    'created_at' => $broadcast->created_at->format('M d, H:i'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Database error: ' . $e->getMessage(),
+                'hint' => 'Make sure broadcast_messages table exists in TiDB Cloud'
+            ], 500);
         }
-
-        $request->validate([
-            'message' => 'nullable|string|max:5000',
-            'image' => 'nullable|image|max:5120',
-        ]);
-
-        if (!$request->message && !$request->hasFile('image')) {
-            return response()->json(['error' => 'Message or image is required'], 400);
-        }
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('broadcast_images', 'public');
-        }
-
-        $broadcast = BroadcastMessage::create([
-            'sender_id' => $user->id,
-            'message' => $request->message,
-            'image_path' => $imagePath,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'broadcast' => [
-                'id' => $broadcast->id,
-                'message' => $broadcast->message,
-                'image_path' => $broadcast->image_path,
-                'sender_name' => $user->name,
-                'created_at' => $broadcast->created_at->format('M d, H:i'),
-            ],
-        ]);
     }
 
     // Get all broadcasts
