@@ -176,8 +176,12 @@ class SuperAdminController extends Controller
             'email' => 'required|email|unique:users,email',
         ]);
 
+        // Extract name from email safely
+        $emailParts = explode('@', $request->email);
+        $name = $emailParts[0] ?? 'Courier';
+
         $user = User::create([
-            'name' => explode('@', $request->email)[0],
+            'name' => $name,
             'email' => $request->email,
             'role' => 'courier',
         ]);

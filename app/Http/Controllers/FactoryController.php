@@ -95,15 +95,21 @@ class FactoryController extends Controller
         $factory = auth()->user()->factory;
         
         if (!$factory) {
-            return response()->json(['success' => false, 'message' => 'Factory not found']);
+            return response()->json(['success' => false, 'message' => 'Factory not found'], 400);
         }
+
+        $request->validate([
+            'product_id' => 'required|exists:factory_products,id',
+            'price' => 'required|numeric|min:0|max:999999999999',
+            'production_quantity' => 'required|numeric|min:0|max:9999999999',
+        ]);
 
         $factoryProduct = FactoryProduct::where('id', $request->product_id)
             ->where('factory_id', $factory->id)
             ->first();
 
         if (!$factoryProduct) {
-            return response()->json(['success' => false, 'message' => 'Product not found']);
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
         }
 
         $factoryProduct->price = $request->price;
@@ -119,15 +125,19 @@ class FactoryController extends Controller
         $factory = auth()->user()->factory;
         
         if (!$factory) {
-            return response()->json(['success' => false, 'message' => 'Factory not found']);
+            return response()->json(['success' => false, 'message' => 'Factory not found'], 400);
         }
+
+        $request->validate([
+            'product_id' => 'required|exists:factory_products,id',
+        ]);
 
         $factoryProduct = FactoryProduct::where('id', $request->product_id)
             ->where('factory_id', $factory->id)
             ->first();
 
         if (!$factoryProduct) {
-            return response()->json(['success' => false, 'message' => 'Product not found']);
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
         }
 
         $factoryProduct->delete();
@@ -233,7 +243,7 @@ class FactoryController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:confirmed,processing,pickup,in_delivery,delivered,cancelled'
+            'status' => 'required|in:confirmed,processing,shipped,delivered,cancelled'
         ]);
 
         $order->update(['status' => $request->status]);
@@ -268,7 +278,7 @@ class FactoryController extends Controller
             ->whereHas('supplier')
             ->get()
             ->map(function ($sp) use ($factory) {
-                $distance = $this->calculateDistance(
+                $distance = calculateDistance(
                     $factory->latitude ?? 0, 
                     $factory->longitude ?? 0, 
                     $sp->supplier->latitude ?? 0, 
@@ -289,19 +299,6 @@ class FactoryController extends Controller
             ->sortBy('distance');
 
         return view('factory.marketplace', compact('factory', 'marketplace'));
-    }
-
-    // Haversine distance calculation
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $R = 6371;
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-        $a = sin($dLat/2) * sin($dLat/2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon/2) * sin($dLon/2);
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-        return round($R * $c, 1);
     }
 
     // My Orders (Factory as buyer from Supplier)

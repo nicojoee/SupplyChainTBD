@@ -44,6 +44,7 @@ class ComposerStaticInitc514d8f7b9fc5970bdd94287905ef584
         'a1cfe24d14977df6878b9bf804af2d1c' => __DIR__ . '/..' . '/nunomaduro/collision/src/Adapters/Phpunit/Autoload.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
         'f73cdc319cf50d9e1fa4ea3a928411a6' => __DIR__ . '/../..' . '/app/Helpers/CurrencyHelper.php',
+        '661134e8224273a609e590f66c07a3ce' => __DIR__ . '/../..' . '/app/Helpers/DistanceHelper.php',
     );
 
     public static $prefixLengthsPsr4 = array (

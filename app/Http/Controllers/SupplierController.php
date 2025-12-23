@@ -87,15 +87,21 @@ class SupplierController extends Controller
         $supplier = auth()->user()->supplier;
         
         if (!$supplier) {
-            return response()->json(['success' => false, 'message' => 'Supplier not found']);
+            return response()->json(['success' => false, 'message' => 'Supplier not found'], 400);
         }
+
+        $request->validate([
+            'product_id' => 'required|exists:supplier_products,id',
+            'price' => 'required|numeric|min:0|max:999999999999',
+            'stock_quantity' => 'required|numeric|min:0|max:9999999999',
+        ]);
 
         $supplierProduct = SupplierProduct::where('id', $request->product_id)
             ->where('supplier_id', $supplier->id)
             ->first();
 
         if (!$supplierProduct) {
-            return response()->json(['success' => false, 'message' => 'Product not found']);
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
         }
 
         $supplierProduct->price = $request->price;
@@ -111,15 +117,19 @@ class SupplierController extends Controller
         $supplier = auth()->user()->supplier;
         
         if (!$supplier) {
-            return response()->json(['success' => false, 'message' => 'Supplier not found']);
+            return response()->json(['success' => false, 'message' => 'Supplier not found'], 400);
         }
+
+        $request->validate([
+            'product_id' => 'required|exists:supplier_products,id',
+        ]);
 
         $supplierProduct = SupplierProduct::where('id', $request->product_id)
             ->where('supplier_id', $supplier->id)
             ->first();
 
         if (!$supplierProduct) {
-            return response()->json(['success' => false, 'message' => 'Product not found']);
+            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
         }
 
         $supplierProduct->delete();
@@ -156,7 +166,7 @@ class SupplierController extends Controller
         }
 
         $request->validate([
-            'status' => 'required|in:confirmed,processing,pickup,in_delivery,delivered,cancelled'
+            'status' => 'required|in:confirmed,processing,shipped,delivered,cancelled'
         ]);
 
         $order->update(['status' => $request->status]);
@@ -210,20 +220,4 @@ class SupplierController extends Controller
         return back()->with('success', 'Delivery request sent! Order is now available for couriers to accept.');
     }
 
-    // Haversine formula to calculate distance
-    private function calculateDistance($lat1, $lng1, $lat2, $lng2)
-    {
-        $earthRadius = 6371; // km
-
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLng = deg2rad($lng2 - $lng1);
-
-        $a = sin($dLat / 2) * sin($dLat / 2) +
-            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-            sin($dLng / 2) * sin($dLng / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return $earthRadius * $c;
-    }
 }

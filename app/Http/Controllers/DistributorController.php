@@ -171,7 +171,7 @@ class DistributorController extends Controller
             ->whereHas('factory')
             ->get()
             ->map(function ($fp) use ($distributor) {
-                $distance = $this->calculateDistance(
+                $distance = calculateDistance(
                     $distributor->latitude ?? 0, 
                     $distributor->longitude ?? 0, 
                     $fp->factory->latitude ?? 0, 
@@ -194,18 +194,7 @@ class DistributorController extends Controller
         return view('distributor.marketplace', compact('distributor', 'marketplace'));
     }
 
-    // Haversine distance calculation
-    private function calculateDistance($lat1, $lon1, $lat2, $lon2)
-    {
-        $R = 6371;
-        $dLat = deg2rad($lat2 - $lat1);
-        $dLon = deg2rad($lon2 - $lon1);
-        $a = sin($dLat/2) * sin($dLat/2) +
-             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-             sin($dLon/2) * sin($dLon/2);
-        $c = 2 * atan2(sqrt($a), sqrt(1-$a));
-        return round($R * $c, 1);
-    }
+
 
     // Edit order quantity (only when pending)
     public function editOrder(Request $request, Order $order)

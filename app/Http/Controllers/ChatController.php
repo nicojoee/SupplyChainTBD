@@ -229,9 +229,8 @@ class ChatController extends Controller
             return response()->json(['error' => 'Cannot unsend this message'], 403);
         }
 
-        if ($message->image_path) {
-            Storage::disk('public')->delete($message->image_path);
-        }
+        // Note: Images are stored as Base64 in database, not in filesystem
+        // No need to delete from storage on Vercel serverless
 
         $message->update([
             'is_deleted' => true,
