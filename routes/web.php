@@ -151,9 +151,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [ChatController::class, 'index'])->name('index');
         Route::get('/contacts', [ChatController::class, 'getContacts'])->name('contacts');
         Route::get('/user/{userId}', [ChatController::class, 'show'])->name('show');
+        Route::get('/{userId}', [ChatController::class, 'show'])->where('userId', '[0-9]+'); // Alternative route for JS
         Route::get('/messages/{conversationId}', [ChatController::class, 'getMessages'])->name('messages');
         Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
-        Route::delete('/unsend/{messageId}', [ChatController::class, 'unsendMessage'])->name('unsend');
+        Route::post('/unsend/{messageId}', [ChatController::class, 'unsendMessage'])->name('unsend');
         // Broadcast (superadmin only)
         Route::post('/broadcast', [ChatController::class, 'sendBroadcast'])->name('broadcast');
         Route::get('/broadcasts', [ChatController::class, 'getBroadcasts'])->name('broadcasts');
