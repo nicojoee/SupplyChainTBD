@@ -529,6 +529,18 @@ document.getElementById('message-form').addEventListener('submit', async functio
     try {
         const formData = new FormData(this);
         const imageInput = this.querySelector('input[name="image"]');
+        const messageValue = messageInput.value.trim();
+        const hasImage = imageInput && imageInput.files && imageInput.files[0];
+        
+        // Validate: require either message or image
+        if (!messageValue && !hasImage) {
+            alert('⚠️ Please enter a message or attach an image');
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            messageInput.disabled = false;
+            isMessageSending = false;
+            return;
+        }
         
         // Compress image if exists and > 200KB
         if (imageInput && imageInput.files && imageInput.files[0]) {
