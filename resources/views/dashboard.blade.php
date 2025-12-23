@@ -806,7 +806,15 @@
     const searchInput = document.getElementById('map-search');
     const searchResults = document.getElementById('search-results');
     let searchTimeout = null;
-    let allMarkers = {}; // Store markers by type-id
+    // Store markers by category for filtering
+    let allMarkers = {
+        suppliers: {},
+        factories: {},
+        distributors: {},
+        couriers: {}
+    };
+    // Alias for courier markers (used by filterMap)
+    const courierMarkers = allMarkers.couriers;
 
     searchInput.addEventListener('input', function() {
         const query = this.value.trim();
@@ -1367,8 +1375,13 @@
                     .addTo(map)
                     .bindPopup(popupContent, { maxWidth: 300 });
                 
-                // Store marker for search auto-locate
-                allMarkers[`${props.type}-${props.id}`] = marker;
+                // Store marker for search auto-locate and category filtering
+                const categoryKey = props.type + 's'; // supplier -> suppliers
+                if (categoryKey === 'factorys') {
+                    allMarkers.factories[props.id] = marker;
+                } else if (allMarkers[categoryKey]) {
+                    allMarkers[categoryKey][props.id] = marker;
+                }
                 
                 // Store self marker for auto-zoom
                 if (isSelf) {
