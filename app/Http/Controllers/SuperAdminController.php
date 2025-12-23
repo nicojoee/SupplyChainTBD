@@ -201,6 +201,39 @@ class SuperAdminController extends Controller
         return back()->with('success', "Profile created for {$user->name}!");
     }
 
+    // Delete user account and all related data
+    public function deleteUser(User $user)
+    {
+        // Prevent self-deletion
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        $userName = $user->name;
+
+        // Clean up entity profiles
+        if ($user->supplier) {
+            $user->supplier->products()->delete();
+            $user->supplier->delete();
+        }
+        if ($user->factory) {
+            $user->factory->products()->delete();
+            $user->factory->delete();
+        }
+        if ($user->distributor) {
+            $user->distributor->stocks()->delete();
+            $user->distributor->delete();
+        }
+        if ($user->courier) {
+            $user->courier->delete();
+        }
+
+        // Delete the user
+        $user->delete();
+
+        return back()->with('success', "Account '{$userName}' has been deleted successfully.");
+    }
+
     // Add Supplier Form
     public function addSupplierForm()
     {

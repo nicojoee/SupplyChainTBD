@@ -101,6 +101,16 @@
                             </button>
                         </form>
                         @endif
+                        
+                        @if($user->id !== auth()->id())
+                        <form action="{{ route('superadmin.users.delete', $user) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this account?\\n\\nUser: {{ $user->name }}\\nEmail: {{ $user->email }}\\n\\nThis action cannot be undone!');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; background: #ef4444;" title="Delete this account">
+                                🗑️ Delete
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </td>
             </tr>
