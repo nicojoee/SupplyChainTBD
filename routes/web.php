@@ -145,4 +145,17 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/accept/{order}', [CourierController::class, 'acceptDelivery'])->name('accept');
         Route::post('/cancel/{order}', [CourierController::class, 'cancelDelivery'])->name('cancel');
     });
+
+    // Chat routes
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [ChatController::class, 'index'])->name('index');
+        Route::get('/contacts', [ChatController::class, 'getContacts'])->name('contacts');
+        Route::get('/user/{userId}', [ChatController::class, 'show'])->name('show');
+        Route::get('/messages/{conversationId}', [ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/send', [ChatController::class, 'sendMessage'])->name('send');
+        Route::delete('/unsend/{messageId}', [ChatController::class, 'unsendMessage'])->name('unsend');
+        // Broadcast (superadmin only)
+        Route::post('/broadcast', [ChatController::class, 'sendBroadcast'])->name('broadcast');
+        Route::get('/broadcasts', [ChatController::class, 'getBroadcasts'])->name('broadcasts');
+    });
 });
