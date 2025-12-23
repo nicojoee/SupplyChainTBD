@@ -61,8 +61,8 @@ class SupplierController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'price' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
+            'price' => 'required|numeric|min:0|max:999999999999', // Max ~1 trillion Rupiah
+            'stock_quantity' => 'required|numeric|min:0|max:9999999999', // Max ~10 billion tons (reasonable limit)
         ]);
 
         // Check if product is a finished product (only Factory can sell these)
