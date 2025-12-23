@@ -308,26 +308,112 @@ function closeBroadcastModal() {
     document.getElementById('broadcast-modal').style.display = 'none';
 }
 
-document.getElementById('broadcast-form').addEventListener('submit', function(e) {
+// Compress image to max 200KB using Canvas
+async function compressImage(file, maxSizeKB = 200) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // Scale down if image is very large
+                const maxDimension = 1200;
+                if (width > maxDimension || height > maxDimension) {
+                    const ratio = Math.min(maxDimension / width, maxDimension / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Compress with reducing quality until under maxSizeKB
+                let quality = 0.8;
+                let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                
+                while (dataUrl.length > maxSizeKB * 1024 * 1.37 && quality > 0.1) {
+                    quality -= 0.1;
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                }
+                
+                // If still too large, scale down more
+                if (dataUrl.length > maxSizeKB * 1024 * 1.37) {
+                    const scaleFactor = Math.sqrt((maxSizeKB * 1024 * 1.37) / dataUrl.length);
+                    canvas.width = width * scaleFactor;
+                    canvas.height = height * scaleFactor;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                }
+                
+                // Convert dataURL to Blob
+                const byteString = atob(dataUrl.split(',')[1]);
+                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                const blob = new Blob([ab], { type: mimeString });
+                const compressedFile = new File([blob], file.name, { type: mimeString });
+                
+                console.log(`📷 Compressed: ${(file.size/1024).toFixed(1)}KB → ${(compressedFile.size/1024).toFixed(1)}KB`);
+                resolve(compressedFile);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+document.getElementById('broadcast-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const formData = new FormData(this);
     
-    fetch('{{ route("chat.broadcast") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ Compressing & Sending...';
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData(this);
+        const imageInput = this.querySelector('input[name="image"]');
+        
+        // Compress image if exists
+        if (imageInput.files && imageInput.files[0]) {
+            const originalFile = imageInput.files[0];
+            if (originalFile.size > 200 * 1024) { // Only compress if > 200KB
+                const compressedFile = await compressImage(originalFile, 200);
+                formData.set('image', compressedFile);
+            }
+        }
+        
+        const response = await fetch('{{ route("chat.broadcast") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
-            alert('Broadcast sent successfully!');
+            alert('✅ Broadcast sent successfully!');
             this.reset();
             closeBroadcastModal();
             location.reload();
         } else {
             alert('Error: ' + (data.error || 'Failed to send broadcast'));
         }
-    });
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 });
 
 document.getElementById('broadcast-modal').addEventListener('click', function(e) {
