@@ -1088,7 +1088,7 @@
                 <div class="nav-section">
                     <div class="nav-section-title">Courier</div>
                     <a href="{{ route('courier.index') }}" class="nav-link {{ request()->routeIs('courier.*') ? 'active' : '' }}">
-                        <span class="nav-icon">�</span>
+                        <span class="nav-icon">🚛</span>
                         My Deliveries
                     </a>
                 </div>
