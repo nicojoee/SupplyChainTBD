@@ -1083,7 +1083,7 @@
                         <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);">
                             <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-bottom: 8px;">📍 Lat: ${coords[1].toFixed(6)}, Lng: ${coords[0].toFixed(6)}</div>
                             <div style="display: flex; gap: 8px;">
-                                <button onclick="editPosition('${props.type}', ${props.id}, ${coords[1]}, ${coords[0]})" 
+                                <button onclick="editPosition('${props.type}', ${props.id}, ${coords[1]}, ${coords[0]}, '${props.name.replace(/'/g, "\\'")}')" 
                                     style="flex: 1; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem;">
                                     ✏️ Edit Position
                                 </button>
@@ -1235,56 +1235,6 @@
         })
         .catch(err => console.error('Error loading map data:', err));
 
-    // Click on map to add new entity
-    @if(auth()->user()->role === 'superadmin')
-    let clickMarker = null;
-
-    map.on('click', function(e) {
-        const lat = e.latlng.lat.toFixed(8);
-        const lng = e.latlng.lng.toFixed(8);
-
-        // Remove previous click marker
-        if (clickMarker) {
-            map.removeLayer(clickMarker);
-        }
-
-        // Create popup content with entity options (only fixed location entities)
-        const popupContent = `
-            <div style="text-align: center; min-width: 200px; background: rgba(30, 27, 75, 0.95); padding: 15px; border-radius: 12px; margin: -13px -20px;">
-                <div style="font-weight: 600; margin-bottom: 10px; color: #fff;">📍 Add New Entity</div>
-                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 15px;">
-                    Lat: ${lat}<br>Lng: ${lng}
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="{{ route('superadmin.add.supplier') }}?lat=${lat}&lng=${lng}" 
-                       style="background: #22c55e; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        📦 Add Supplier
-                    </a>
-                    <a href="{{ route('superadmin.add.factory') }}?lat=${lat}&lng=${lng}" 
-                       style="background: #f59e0b; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        🏭 Add Factory
-                    </a>
-                    <a href="{{ route('superadmin.add.distributor') }}?lat=${lat}&lng=${lng}" 
-                       style="background: #6366f1; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        🏪 Add Distributor
-                    </a>
-                </div>
-            </div>
-        `;
-
-        // Add a temporary marker with popup
-        clickMarker = L.marker([e.latlng.lat, e.latlng.lng], {
-            icon: L.divIcon({
-                className: 'click-marker',
-                html: '<div style="background: #ec4899; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">➕</div>',
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            })
-        }).addTo(map);
-
-        clickMarker.bindPopup(popupContent, { maxWidth: 300 }).openPopup();
-    });
-    @endif
 
     // AJAX Pagination for dashboard panels
     const pageState = {
@@ -1537,37 +1487,183 @@
         return plurals[type] || type + 's';
     }
 
-    function editPosition(type, id, currentLat, currentLng) {
-        const newLat = prompt('Enter new Latitude:', currentLat);
-        if (newLat === null) return;
-        
-        const newLng = prompt('Enter new Longitude:', currentLng);
-        if (newLng === null) return;
+    // Edit Mode State
+    let editModeActive = false;
+    let editingEntity = null;
+    let editPreviewMarker = null;
+    let editBannerElement = null;
 
-        // Validate coordinates
-        if (isNaN(newLat) || isNaN(newLng)) {
-            alert('Invalid coordinates. Please enter valid numbers.');
+    // Create edit mode banner
+    function createEditBanner() {
+        if (editBannerElement) return;
+        
+        editBannerElement = document.createElement('div');
+        editBannerElement.id = 'edit-mode-banner';
+        editBannerElement.style.cssText = `
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-family: system-ui, sans-serif;
+        `;
+        document.body.appendChild(editBannerElement);
+    }
+
+    function showEditBanner(entityName) {
+        createEditBanner();
+        editBannerElement.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.2rem;">📍</span>
+                <div>
+                    <div style="font-weight: 600;">Edit Mode Active</div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">Click on map to set new location for "${entityName}"</div>
+                </div>
+            </div>
+            <button onclick="cancelEditMode()" style="
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.4);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: background 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                ❌ Cancel
+            </button>
+        `;
+        editBannerElement.style.display = 'flex';
+    }
+
+    function hideEditBanner() {
+        if (editBannerElement) {
+            editBannerElement.style.display = 'none';
+        }
+    }
+
+    function editPosition(type, id, currentLat, currentLng, name) {
+        // Close any open popups
+        map.closePopup();
+        
+        // Enter edit mode
+        editModeActive = true;
+        editingEntity = { type, id, currentLat, currentLng, name };
+        
+        // Show edit banner
+        showEditBanner(name);
+        
+        // Change cursor style
+        document.getElementById('map').style.cursor = 'crosshair';
+        
+        // Add preview marker at current position
+        if (editPreviewMarker) {
+            map.removeLayer(editPreviewMarker);
+        }
+        
+        editPreviewMarker = L.marker([currentLat, currentLng], {
+            icon: L.divIcon({
+                className: 'edit-preview-marker',
+                html: `<div style="
+                    background: #f59e0b;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                    border: 3px solid white;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+                    animation: pulse 1.5s ease-in-out infinite;
+                ">📍</div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            }),
+            zIndexOffset: 1000
+        }).addTo(map);
+        
+        // Add pulse animation CSS if not exists
+        if (!document.getElementById('edit-marker-styles')) {
+            const style = document.createElement('style');
+            style.id = 'edit-marker-styles';
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        console.log('📍 Edit mode activated for:', name);
+    }
+
+    function cancelEditMode() {
+        editModeActive = false;
+        editingEntity = null;
+        
+        // Remove preview marker
+        if (editPreviewMarker) {
+            map.removeLayer(editPreviewMarker);
+            editPreviewMarker = null;
+        }
+        
+        // Hide banner
+        hideEditBanner();
+        
+        // Reset cursor
+        document.getElementById('map').style.cursor = '';
+        
+        console.log('📍 Edit mode cancelled');
+    }
+
+    function confirmNewPosition(lat, lng) {
+        if (!editingEntity) return;
+        
+        const { type, id, name } = editingEntity;
+        const plural = getEntityPlural(type);
+        
+        // Show confirmation
+        if (!confirm(`Set new location for "${name}"?\n\nNew coordinates:\nLatitude: ${lat.toFixed(6)}\nLongitude: ${lng.toFixed(6)}`)) {
             return;
         }
-
-        const plural = getEntityPlural(type);
 
         // Send update request
         fetch(`/superadmin/${plural}/${id}/position`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
-                latitude: parseFloat(newLat),
-                longitude: parseFloat(newLng)
+                latitude: lat,
+                longitude: lng
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (response.ok) {
+                return response.json().catch(() => ({ success: true }));
+            }
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to update position');
+            });
+        })
         .then(data => {
             if (data.success) {
-                alert('Position updated successfully!');
+                alert('✅ Position updated successfully!');
                 location.reload();
             } else {
                 alert('Error: ' + (data.message || 'Failed to update position'));
@@ -1575,9 +1671,77 @@
         })
         .catch(err => {
             console.error('Error updating position:', err);
-            alert('Error updating position');
+            alert('Error: ' + err.message);
+        })
+        .finally(() => {
+            cancelEditMode();
         });
     }
+
+    // Click marker for adding new entities
+    let clickMarker = null;
+
+    // Handle map click for edit mode
+    map.on('click', function(e) {
+        if (editModeActive && editingEntity) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            // Update preview marker position
+            if (editPreviewMarker) {
+                editPreviewMarker.setLatLng([lat, lng]);
+            }
+            
+            // Confirm and save new position
+            confirmNewPosition(lat, lng);
+            return; // Don't process normal click
+        }
+        
+        // Normal superadmin click behavior (add new entity) - only when not in edit mode
+        const lat = e.latlng.lat.toFixed(8);
+        const lng = e.latlng.lng.toFixed(8);
+
+        // Remove previous click marker
+        if (clickMarker) {
+            map.removeLayer(clickMarker);
+        }
+
+        // Create popup content with entity options (only fixed location entities)
+        const popupContent = `
+            <div style="text-align: center; min-width: 200px; background: rgba(30, 27, 75, 0.95); padding: 15px; border-radius: 12px; margin: -13px -20px;">
+                <div style="font-weight: 600; margin-bottom: 10px; color: #fff;">📍 Add New Entity</div>
+                <div style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 15px;">
+                    Lat: ${lat}<br>Lng: ${lng}
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <a href="{{ route('superadmin.add.supplier') }}?lat=${lat}&lng=${lng}" 
+                       style="background: #22c55e; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        📦 Add Supplier
+                    </a>
+                    <a href="{{ route('superadmin.add.factory') }}?lat=${lat}&lng=${lng}" 
+                       style="background: #f59e0b; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        🏭 Add Factory
+                    </a>
+                    <a href="{{ route('superadmin.add.distributor') }}?lat=${lat}&lng=${lng}" 
+                       style="background: #6366f1; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        🏪 Add Distributor
+                    </a>
+                </div>
+            </div>
+        `;
+
+        // Add a temporary marker with popup
+        clickMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+            icon: L.divIcon({
+                className: 'click-marker',
+                html: '<div style="background: #ec4899; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">➕</div>',
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            })
+        }).addTo(map);
+
+        clickMarker.bindPopup(popupContent, { maxWidth: 300 }).openPopup();
+    });
 
     function deleteEntity(type, id, name) {
         if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis action cannot be undone.`)) {
