@@ -865,10 +865,13 @@
         // Zoom to location
         map.setView([lat, lng], 16);
         
-        // Find and open the marker popup
-        const markerKey = `${type}-${id}`;
-        if (allMarkers[markerKey]) {
-            setTimeout(() => allMarkers[markerKey].openPopup(), 300);
+        // Find and open the marker popup using new structure
+        let categoryKey = type + 's'; // supplier -> suppliers
+        if (categoryKey === 'factorys') categoryKey = 'factories';
+        
+        const categoryMarkers = allMarkers[categoryKey];
+        if (categoryMarkers && categoryMarkers[id]) {
+            setTimeout(() => categoryMarkers[id].openPopup(), 300);
         }
     };
 
