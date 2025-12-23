@@ -79,7 +79,7 @@
                         <option value="">Choose a product...</option>
                         @foreach($availableFactoryProducts as $fp)
                             <option value="{{ $fp->id }}">
-                                {{ $fp->product->name ?? 'Unknown' }} - ${{ number_format($fp->price, 2) }} 
+                                {{ $fp->product->name ?? 'Unknown' }} - {{ formatRupiah($fp->price) }}/ton 
                                 (from {{ $fp->factory->name ?? 'Unknown Factory' }})
                             </option>
                         @endforeach
@@ -121,7 +121,7 @@
                             {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                         @endforeach
                     </td>
-                    <td>${{ number_format($order->total_amount, 2) }}</td>
+                    <td>{{ formatRupiah($order->total_amount) }}</td>
                     <td>
                         <span class="badge {{ $order->status === 'delivered' ? 'badge-success' : ($order->status === 'pending' ? 'badge-warning' : 'badge-info') }}">
                             {{ ucfirst($order->status) }}

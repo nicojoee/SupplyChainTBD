@@ -30,7 +30,7 @@
                     @foreach($marketplace as $item)
                     <tr>
                         <td><strong>{{ $item['product_name'] }}</strong></td>
-                        <td style="color: #22c55e;">${{ number_format($item['price'], 2) }}</td>
+                        <td style="color: #22c55e;">{{ formatRupiah($item['price']) }}</td>
                         <td>{{ number_format($item['stock']) }}</td>
                         <td>
                             <div>{{ $item['seller_name'] }}</div>

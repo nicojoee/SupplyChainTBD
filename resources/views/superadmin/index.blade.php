@@ -135,7 +135,7 @@
                             {{ ucfirst($order->status) }}
                         </span>
                     </td>
-                    <td>${{ number_format($order->total_amount, 2) }}</td>
+                    <td>{{ formatRupiah($order->total_amount) }}</td>
                 </tr>
                 @endforeach
         </tbody>

@@ -90,7 +90,7 @@
                         {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                     @endforeach
                 </td>
-                <td>${{ number_format($order->total_amount, 2) }}</td>
+                <td>{{ formatRupiah($order->total_amount) }}</td>
                 <td>
                     <form action="{{ route('courier.assign', $order) }}" method="POST" style="display: inline-flex; gap: 0.5rem;">
                         @csrf
@@ -137,7 +137,7 @@
                         {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                     @endforeach
                 </td>
-                <td>${{ number_format($order->total_amount, 2) }}</td>
+                <td>{{ formatRupiah($order->total_amount) }}</td>
                 <td>
                     <span class="badge {{ $order->status === 'delivered' ? 'badge-success' : ($order->status === 'shipped' ? 'badge-info' : 'badge-warning') }}">
                         {{ ucfirst($order->status) }}

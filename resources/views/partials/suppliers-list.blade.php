@@ -6,7 +6,7 @@
             <div style="font-size: 0.8rem; color: var(--secondary);">
                 Products: 
                 @foreach($supplier->products as $sp)
-                    <span class="badge badge-success">{{ $sp->product->name ?? 'N/A' }} (${{ number_format($sp->price, 2) }})</span>
+                    <span class="badge badge-success">{{ $sp->product->name ?? 'N/A' }} ({{ formatRupiah($sp->price) }}/ton)</span>
                 @endforeach
             </div>
         @else

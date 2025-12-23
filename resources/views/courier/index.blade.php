@@ -63,7 +63,7 @@
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-weight: 600; color: #22c55e;">${{ number_format($order->total_amount, 2) }}</div>
+                        <div style="font-weight: 600; color: #22c55e;">{{ formatRupiah($order->total_amount) }}</div>
                         <button type="button" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; margin-top: 0.5rem;"
                                 onclick="showAcceptConfirmation('{{ $order->order_number }}', '{{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}', '{{ $order->sellerSupplier->address ?? $order->sellerFactory->address ?? '' }}', '{{ number_format($order->total_amount, 2) }}', {{ $order->id }})">
                             ✓ Accept Delivery
@@ -103,7 +103,7 @@
                             {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                         @endforeach
                     </td>
-                    <td>${{ number_format($order->total_amount, 2) }}</td>
+                    <td>{{ formatRupiah($order->total_amount) }}</td>
                     <td>
                         <span class="badge badge-info">{{ ucfirst($order->status) }}</span>
                     </td>
@@ -173,7 +173,7 @@
                             {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                         @endforeach
                     </td>
-                    <td>${{ number_format($order->total_amount, 2) }}</td>
+                    <td>{{ formatRupiah($order->total_amount) }}</td>
                     <td>{{ $order->updated_at->format('M d, Y H:i') }}</td>
                 </tr>
                 @endforeach

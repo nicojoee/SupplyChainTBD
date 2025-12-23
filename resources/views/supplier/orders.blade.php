@@ -48,7 +48,7 @@
                                 <div style="font-size: 0.85rem;">{{ $item->product->name ?? 'Product' }} × {{ $item->quantity }}</div>
                             @endforeach
                         </td>
-                        <td><strong>${{ number_format($order->total_amount, 2) }}</strong></td>
+                        <td><strong>{{ formatRupiah($order->total_amount) }}</strong></td>
                         <td>
                             <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; {{ $statusColors[$order->status] ?? '' }}">
                                 {{ strtoupper(str_replace('_', ' ', $order->status)) }}

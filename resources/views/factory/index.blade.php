@@ -39,7 +39,7 @@
                 <thead>
                     <tr>
                         <th>Product</th>
-                        <th>Price</th>
+                        <th>Price/Ton (Rp)</th>
                         <th>Quantity</th>
                         <th>Actions</th>
                     </tr>
@@ -49,7 +49,7 @@
                     <tr id="product-row-{{ $fp->id }}">
                         <td>{{ $fp->product->name ?? 'Unknown' }}</td>
                         <td>
-                            <span class="display-value">${{ number_format($fp->price, 2) }}</span>
+                            <span class="display-value">{{ formatRupiah($fp->price) }}</span>
                             <input type="number" class="edit-input form-control" name="price" value="{{ $fp->price }}" 
                                    step="0.01" min="0" style="display: none; width: 100px; padding: 4px;">
                         </td>
@@ -105,8 +105,8 @@
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Price ($)</label>
-                <input type="number" name="price" class="form-control" step="0.01" min="0" required placeholder="Enter selling price">
+                <label class="form-label">Price/Ton (Rp)</label>
+                <input type="number" name="price" class="form-control" step="1" min="0" required placeholder="Enter selling price in Rupiah">
             </div>
             <div class="form-group">
                 <label class="form-label">Production Quantity</label>
@@ -131,7 +131,7 @@
                         <option value="">Choose a product...</option>
                         @foreach($availableSupplierProducts as $sp)
                             <option value="{{ $sp->id }}">
-                                {{ $sp->product->name ?? 'Unknown' }} - ${{ number_format($sp->price, 2) }} 
+                                {{ $sp->product->name ?? 'Unknown' }} - {{ formatRupiah($sp->price) }}/ton 
                                 (from {{ $sp->supplier->name ?? 'Unknown Supplier' }})
                             </option>
                         @endforeach
@@ -173,7 +173,7 @@
                             {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
                         @endforeach
                     </td>
-                    <td>${{ number_format($order->total_amount, 2) }}</td>
+                    <td>{{ formatRupiah($order->total_amount) }}</td>
                     <td>
                         @php
                             $statusColors = [
@@ -236,7 +236,7 @@
                                 <div style="font-size: 0.85rem;">{{ $item->product->name ?? 'Product' }} × {{ $item->quantity }}</div>
                             @endforeach
                         </td>
-                        <td><strong>${{ number_format($incOrder->total_amount, 2) }}</strong></td>
+                        <td><strong>{{ formatRupiah($incOrder->total_amount) }}</strong></td>
                         <td>
                             <span style="padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; {{ $statusColors[$incOrder->status] ?? '' }}">
                                 {{ strtoupper(str_replace('_', ' ', $incOrder->status)) }}
@@ -288,6 +288,18 @@
 
 @section('scripts')
 <script>
+// Format number as Indonesian Rupiah
+function formatRupiahJS(amount) {
+    if (amount >= 1000000000000) {
+        return 'Rp ' + (amount / 1000000000000).toFixed(1).replace('.', ',') + ' T';
+    } else if (amount >= 1000000000) {
+        return 'Rp ' + (amount / 1000000000).toFixed(1).replace('.', ',') + ' M';
+    } else if (amount >= 1000000) {
+        return 'Rp ' + (amount / 1000000).toFixed(1).replace('.', ',') + ' Jt';
+    }
+    return 'Rp ' + amount.toLocaleString('id-ID');
+}
+
 function enableEdit(productId) {
     const row = document.getElementById('product-row-' + productId);
     row.querySelectorAll('.display-value').forEach(el => el.style.display = 'none');
@@ -326,7 +338,7 @@ function saveProduct(productId) {
         if (data.success) {
             const priceDisplay = row.querySelectorAll('.display-value')[0];
             const qtyDisplay = row.querySelectorAll('.display-value')[1];
-            priceDisplay.textContent = '$' + parseFloat(price).toFixed(2);
+            priceDisplay.textContent = formatRupiahJS(parseFloat(price));
             qtyDisplay.textContent = parseInt(quantity).toLocaleString();
             cancelEdit(productId);
             alert('Product updated successfully!');

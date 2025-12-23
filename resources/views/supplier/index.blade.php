@@ -209,6 +209,18 @@
 
 @section('scripts')
 <script>
+// Format number as Indonesian Rupiah
+function formatRupiahJS(amount) {
+    if (amount >= 1000000000000) {
+        return 'Rp ' + (amount / 1000000000000).toFixed(1).replace('.', ',') + ' T';
+    } else if (amount >= 1000000000) {
+        return 'Rp ' + (amount / 1000000000).toFixed(1).replace('.', ',') + ' M';
+    } else if (amount >= 1000000) {
+        return 'Rp ' + (amount / 1000000).toFixed(1).replace('.', ',') + ' Jt';
+    }
+    return 'Rp ' + amount.toLocaleString('id-ID');
+}
+
 function enableEdit(productId) {
     const row = document.getElementById('product-row-' + productId);
     row.querySelectorAll('.display-value').forEach(el => el.style.display = 'none');
@@ -248,7 +260,7 @@ function saveProduct(productId) {
             // Update display values
             const priceDisplay = row.querySelectorAll('.display-value')[0];
             const stockDisplay = row.querySelectorAll('.display-value')[1];
-            priceDisplay.textContent = '$' + parseFloat(price).toFixed(2);
+            priceDisplay.textContent = formatRupiahJS(parseFloat(price));
             stockDisplay.textContent = parseInt(stock).toLocaleString();
             
             cancelEdit(productId);

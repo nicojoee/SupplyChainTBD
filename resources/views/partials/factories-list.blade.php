@@ -7,7 +7,7 @@
             <div style="font-size: 0.8rem; color: var(--secondary);">
                 Products: 
                 @foreach($factory->products as $fp)
-                    <span class="badge badge-warning">{{ $fp->product->name ?? 'N/A' }} (${{ number_format($fp->price, 2) }})</span>
+                    <span class="badge badge-warning">{{ $fp->product->name ?? 'N/A' }} ({{ formatRupiah($fp->price) }}/ton)</span>
                 @endforeach
             </div>
         @else

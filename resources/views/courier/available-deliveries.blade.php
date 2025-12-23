@@ -48,7 +48,7 @@
                                 </div>
                             @endforeach
                         </td>
-                        <td>${{ number_format($order->total_amount, 2) }}</td>
+                        <td>{{ formatRupiah($order->total_amount) }}</td>
                         <td>
                             @if($order->distance && $order->distance < 999999)
                                 <span style="color: {{ $order->distance < 10 ? '#22c55e' : ($order->distance < 50 ? '#f59e0b' : '#ef4444') }};">

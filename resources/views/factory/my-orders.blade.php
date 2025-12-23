@@ -57,19 +57,19 @@
                         @foreach($order->items as $item)
                         <tr>
                             <td>{{ $item->product->name ?? 'Product' }}</td>
-                            <td>${{ number_format($item->unit_price, 2) }}</td>
+                            <td>{{ formatRupiah($item->unit_price) }}</td>
                             <td>
                                 <input type="number" name="quantities[{{ $item->id }}]" value="{{ $item->quantity }}" 
                                        min="1" class="form-control" style="width: 80px; padding: 4px;">
                             </td>
-                            <td><strong>${{ number_format($item->subtotal, 2) }}</strong></td>
+                            <td><strong>{{ formatRupiah($item->subtotal) }}</strong></td>
                         </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="3" style="text-align: right; font-weight: 600;">Total:</td>
-                            <td><strong style="color: #22c55e;">${{ number_format($order->total_amount, 2) }}</strong></td>
+                            <td><strong style="color: #22c55e;">{{ formatRupiah($order->total_amount) }}</strong></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -103,16 +103,16 @@
                     @foreach($order->items as $item)
                     <tr>
                         <td>{{ $item->product->name ?? 'Product' }}</td>
-                        <td>${{ number_format($item->unit_price, 2) }}</td>
+                        <td>{{ formatRupiah($item->unit_price) }}</td>
                         <td>{{ $item->quantity }}</td>
-                        <td><strong>${{ number_format($item->subtotal, 2) }}</strong></td>
+                        <td><strong>{{ formatRupiah($item->subtotal) }}</strong></td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="3" style="text-align: right; font-weight: 600;">Total:</td>
-                        <td><strong style="color: #22c55e;">${{ number_format($order->total_amount, 2) }}</strong></td>
+                        <td><strong style="color: #22c55e;">{{ formatRupiah($order->total_amount) }}</strong></td>
                     </tr>
                 </tfoot>
             </table>
