@@ -188,6 +188,79 @@
             height: 44px !important;
         }
     }
+
+    /* Leaflet Routing Machine Custom Styling */
+    .leaflet-routing-container {
+        background: rgba(30, 27, 75, 0.95) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 12px !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        color: white !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+    }
+    
+    .leaflet-routing-container h2,
+    .leaflet-routing-container h3 {
+        color: white !important;
+        font-size: 1rem !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    .leaflet-routing-alt {
+        background: transparent !important;
+        padding: 8px !important;
+    }
+    
+    .leaflet-routing-alt-minimized {
+        background: rgba(255,255,255,0.1) !important;
+    }
+    
+    .leaflet-routing-geocoders div {
+        background: rgba(255,255,255,0.1) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        color: white !important;
+    }
+    
+    .leaflet-routing-collapse-btn {
+        background: rgba(99, 102, 241, 0.8) !important;
+        color: white !important;
+        border-radius: 50% !important;
+    }
+    
+    table.leaflet-routing-instruction-table td {
+        color: rgba(255,255,255,0.9) !important;
+        padding: 4px 8px !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    }
+    
+    .leaflet-routing-instruction-distance {
+        color: #22c55e !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Clear Route Button */
+    #clear-route-btn {
+        position: absolute;
+        top: 60px;
+        right: 10px;
+        z-index: 1000;
+        background: rgba(239, 68, 68, 0.9);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        display: none;
+    }
+    
+    #clear-route-btn:hover {
+        background: rgba(220, 38, 38, 1);
+    }
 </style>
 @endsection
 
@@ -324,35 +397,52 @@
                     <tr>
                         <th>Order #</th>
                         <th>Items</th>
-                        <th>Amount</th>
+                        <th>Pickup From</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($assignedOrders as $order)
+                    @php
+                        $sellerName = $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown';
+                        $sellerLat = $order->sellerSupplier->latitude ?? $order->sellerFactory->latitude ?? null;
+                        $sellerLng = $order->sellerSupplier->longitude ?? $order->sellerFactory->longitude ?? null;
+                        $sellerAddress = $order->sellerSupplier->address ?? $order->sellerFactory->address ?? '';
+                    @endphp
                     <tr>
                         <td>{{ $order->order_number }}</td>
                         <td>
                             @foreach($order->items as $item)
-                                {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }})<br>
+                                {{ $item->product->name ?? 'N/A' }} (x{{ number_format($item->quantity, 1) }} ton)<br>
                             @endforeach
                         </td>
-                        <td>{{ formatRupiah($order->total_amount) }}</td>
+                        <td>
+                            <div style="font-weight: 600;">{{ $sellerName }}</div>
+                            <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">{{ Str::limit($sellerAddress, 30) }}</div>
+                        </td>
                         <td>
                             <span class="badge badge-info">{{ ucfirst($order->status) }}</span>
                         </td>
                         <td>
-                            <form action="{{ route('courier.orders.status', $order) }}" method="POST" style="display: inline-flex; gap: 0.5rem;">
-                                @csrf
-                                @method('PATCH')
-                                <select name="status" class="form-control" style="width: auto; padding: 0.4rem; font-size: 0.85rem;">
-                                    <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
-                                    <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                    <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
-                                </select>
-                                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Update</button>
-                            </form>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                @if($sellerLat && $sellerLng)
+                                <button type="button" onclick="navigateToDestination({{ $sellerLat }}, {{ $sellerLng }}, '{{ addslashes($sellerName) }}')" 
+                                        class="btn btn-info" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                                    🧭 Navigate
+                                </button>
+                                @endif
+                                <form action="{{ route('courier.orders.status', $order) }}" method="POST" style="display: inline-flex; gap: 0.5rem;">
+                                    @csrf
+                                    @method('PATCH')
+                                    <select name="status" class="form-control" style="width: auto; padding: 0.4rem; font-size: 0.85rem;">
+                                        <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
+                                        <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
+                                        <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Update</button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     @endforeach
@@ -2493,6 +2583,158 @@
             }
         }
     });
+    @endif
+
+    // ============================================
+    // COURIER ROUTE NAVIGATION
+    // ============================================
+    @if(auth()->user()->role === 'courier')
+    let routingControl = null;
+    
+    function navigateToDestination(destLat, destLng, destName) {
+        // First get current courier location
+        if (!navigator.geolocation) {
+            alert('Browser tidak mendukung GPS. Tidak dapat menampilkan rute.');
+            return;
+        }
+        
+        // Show loading indicator
+        const loadingToast = document.createElement('div');
+        loadingToast.id = 'routing-toast';
+        loadingToast.innerHTML = '🧭 Mencari rute terpendek...';
+        loadingToast.style.cssText = 'position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(30, 27, 75, 0.95); color: white; padding: 12px 24px; border-radius: 12px; z-index: 10001; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4);';
+        document.body.appendChild(loadingToast);
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const courierLat = position.coords.latitude;
+                const courierLng = position.coords.longitude;
+                
+                // Remove existing route if any
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
+                
+                // Create routing control with OSRM (free routing service)
+                routingControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(courierLat, courierLng),
+                        L.latLng(destLat, destLng)
+                    ],
+                    routeWhileDragging: false,
+                    showAlternatives: false,
+                    fitSelectedRoutes: true,
+                    lineOptions: {
+                        styles: [
+                            { color: '#6366f1', opacity: 0.8, weight: 6 },
+                            { color: '#818cf8', opacity: 1, weight: 3 }
+                        ],
+                        extendToWaypoints: true,
+                        missingRouteTolerance: 0
+                    },
+                    createMarker: function(i, waypoint, n) {
+                        const icons = [
+                            L.divIcon({
+                                className: 'route-start-marker',
+                                html: '<div style="background: linear-gradient(135deg, #22c55e, #16a34a); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">🚚</div>',
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 16]
+                            }),
+                            L.divIcon({
+                                className: 'route-end-marker',
+                                html: '<div style="background: linear-gradient(135deg, #ef4444, #dc2626); width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">📍</div>',
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 16]
+                            })
+                        ];
+                        return L.marker(waypoint.latLng, { icon: icons[i] })
+                            .bindPopup(i === 0 ? '<strong>📍 Lokasi Anda</strong>' : '<strong>🎯 ' + destName + '</strong>');
+                    },
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://router.project-osrm.org/route/v1',
+                        profile: 'driving'
+                    }),
+                    formatter: new L.Routing.Formatter({
+                        units: 'metric',
+                        language: 'id'
+                    }),
+                    collapsible: true,
+                    show: true
+                }).addTo(map);
+                
+                // Style the routing panel
+                routingControl.on('routesfound', function(e) {
+                    const routes = e.routes;
+                    const summary = routes[0].summary;
+                    const distance = (summary.totalDistance / 1000).toFixed(1);
+                    const time = Math.round(summary.totalTime / 60);
+                    
+                    // Remove loading toast
+                    const toast = document.getElementById('routing-toast');
+                    if (toast) {
+                        toast.innerHTML = `✅ Rute ditemukan: ${distance} km (~${time} menit)`;
+                        toast.style.background = 'rgba(34, 197, 94, 0.95)';
+                        setTimeout(() => toast.remove(), 3000);
+                    }
+                    
+                    // Style the container
+                    const container = document.querySelector('.leaflet-routing-container');
+                    if (container) {
+                        container.style.cssText = 'background: rgba(30, 27, 75, 0.95); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); color: white; max-height: 300px; overflow-y: auto; font-size: 0.85rem;';
+                    }
+                });
+                
+                routingControl.on('routingerror', function(e) {
+                    const toast = document.getElementById('routing-toast');
+                    if (toast) {
+                        toast.innerHTML = '❌ Gagal mencari rute. Coba lagi.';
+                        toast.style.background = 'rgba(239, 68, 68, 0.95)';
+                        setTimeout(() => toast.remove(), 3000);
+                    }
+                });
+                
+                // Scroll to map
+                document.getElementById('map-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+            function(error) {
+                // Remove loading toast
+                const toast = document.getElementById('routing-toast');
+                if (toast) {
+                    toast.innerHTML = '❌ Gagal mendapatkan lokasi GPS.';
+                    toast.style.background = 'rgba(239, 68, 68, 0.95)';
+                    setTimeout(() => toast.remove(), 3000);
+                }
+                
+                let errorMsg = 'Gagal mendapatkan lokasi GPS.';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMsg = 'Izin GPS ditolak. Aktifkan lokasi di browser.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMsg = 'Sinyal GPS tidak tersedia.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMsg = 'Waktu permintaan habis.';
+                        break;
+                }
+                alert(errorMsg);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+        );
+    }
+    
+    // Function to clear route
+    function clearRoute() {
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+    }
     @endif
 </script>
 @endsection
