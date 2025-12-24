@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Courier;
+use App\Models\DistributorStock;
 use App\Models\Order;
 use App\Models\Supplier;
 use App\Models\Factory;
@@ -200,14 +201,37 @@ class CourierController extends Controller
 
         $order->update(['status' => $request->status]);
 
-        // If delivered, check if courier has other active orders
-        if ($request->status === 'delivered' && $courier) {
-            $hasActiveOrders = Order::where('courier_id', $courier->id)
-                ->whereIn('status', ['processing', 'shipped'])
-                ->exists();
+        // If delivered, update buyer's stock and check courier status
+        if ($request->status === 'delivered') {
+            // Update buyer's stock if buyer is a distributor
+            if ($order->buyer_type === 'distributor') {
+                foreach ($order->items as $item) {
+                    // Find or create stock record for this product
+                    $stock = DistributorStock::firstOrCreate(
+                        [
+                            'distributor_id' => $order->buyer_id,
+                            'product_id' => $item->product_id,
+                        ],
+                        [
+                            'quantity' => 0,
+                            'min_stock_level' => 10, // Default minimum level
+                        ]
+                    );
+                    
+                    // Increment stock quantity
+                    $stock->increment('quantity', $item->quantity);
+                }
+            }
 
-            if (!$hasActiveOrders) {
-                $courier->update(['status' => 'idle']);
+            // Check if courier has other active orders
+            if ($courier) {
+                $hasActiveOrders = Order::where('courier_id', $courier->id)
+                    ->whereIn('status', ['processing', 'shipped'])
+                    ->exists();
+
+                if (!$hasActiveOrders) {
+                    $courier->update(['status' => 'idle']);
+                }
             }
         }
 
