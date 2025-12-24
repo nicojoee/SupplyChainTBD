@@ -456,20 +456,46 @@
     <!-- Available Deliveries -->
     <div style="padding: 1rem; border-top: 1px solid var(--border-glass);">
         <h4 style="margin: 0 0 0.75rem 0; font-size: 1rem;">📋 Available Deliveries</h4>
+        @php
+            $courierCapacity = auth()->user()->courier->vehicle_capacity ?? 15;
+        @endphp
         @if(isset($availableOrders) && $availableOrders->count() > 0)
             <div style="display: grid; gap: 0.75rem;">
                 @foreach($availableOrders as $order)
+                @php
+                    // Calculate total quantity - fallback to sum of items if total_quantity is 0
+                    $totalQty = $order->total_quantity;
+                    if ($totalQty <= 0) {
+                        $totalQty = $order->items->sum('quantity');
+                    }
+                    
+                    // Calculate remaining quantity
+                    $remainingQty = $totalQty - $order->delivered_quantity;
+                    if ($remainingQty <= 0) continue; // Skip if nothing left
+                    
+                    $willCarry = min($courierCapacity, $remainingQty);
+                @endphp
+                @if($remainingQty > 0)
                 <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
                         <div>
                             <div style="font-weight: 600;">{{ $order->order_number }}</div>
                             <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6);">
                                 @foreach($order->items as $item)
-                                    {{ $item->product->name ?? 'N/A' }} (x{{ $item->quantity }}){{ !$loop->last ? ', ' : '' }}
+                                    {{ $item->product->name ?? 'N/A' }} (x{{ number_format($item->quantity, 1) }} ton){{ !$loop->last ? ', ' : '' }}
                                 @endforeach
                             </div>
                             <div style="font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;">
                                 From: {{ $order->sellerSupplier->name ?? $order->sellerFactory->name ?? 'Unknown' }}
+                            </div>
+                            <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(34, 197, 94, 0.1); border-radius: 6px; font-size: 0.8rem;">
+                                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                                    <span>📦 Total: <strong>{{ number_format($totalQty, 1) }} ton</strong></span>
+                                    @if($remainingQty < $totalQty)
+                                        <span style="color: #f59e0b;">⏳ Remaining: <strong>{{ number_format($remainingQty, 1) }} ton</strong></span>
+                                    @endif
+                                    <span style="color: #22c55e;">🚛 You'll carry: <strong>{{ number_format($willCarry, 1) }} ton</strong></span>
+                                </div>
                             </div>
                         </div>
                         <div style="text-align: right;">
@@ -477,12 +503,13 @@
                             <form action="{{ route('courier.accept', $order) }}" method="POST" style="margin-top: 0.5rem;">
                                 @csrf
                                 <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">
-                                    ✓ Accept
+                                    ✓ Accept {{ number_format($willCarry, 1) }} ton
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
+                @endif
                 @endforeach
             </div>
         @else
